@@ -1,18 +1,25 @@
 export class AdjacencyList {
   nodes = [];
+  id = '';
+
+  constructor() {
+    this.id = uuid();
+  }
 
   /**
    * Adds another AdjacencyList to this one.
    * @param {AdjacencyList} otherAL
    */
-  append(otherAL) {
+  concat(otherAL) {
     for (const otherSource of otherAL.nodes) {
       // Find the corresponding source node in this graph.
       const thisSource = this.findNodeByName(otherSource.name);
       if (thisSource === null) {
         // If it's not found, add it and all of its adjacent nodes.
         // console.log(`append: ${otherSource.name} not found: adding wholesale.`);
-        this.nodes.push(otherSource.clone());
+        const source = otherSource.clone();
+        source.subgraphs.push(otherAL.id);
+        this.nodes.push(source);
       } else {
         // If this source is found, see if the other source points to any
         // other targets.
@@ -31,11 +38,18 @@ export class AdjacencyList {
           let thisTarget = this.findNodeByName(otherTargetName);
           if (thisTarget === null) {
             // console.log(`Did not find node named "${otherTargetName}". Creating.`);
-            this.nodes.push(otherTarget.clone());
+            thisTarget = otherTarget.clone();
+            thisTarget.subgraphs.push(this.id);
+            this.nodes.push(thisTarget);
+          } else {
+            // This target exists in the graph, already, but still add the other
+            // graph as a subgraph.
+            thisTarget.subgraphs.push(otherAL.id);
           }
 
           // And then add the name to our adjacency list.
           thisSource.adjacentEdges.push(edge.clone());
+          thisSource.subgraphs.push(otherAL.id);
         }
       }
     }
@@ -62,6 +76,10 @@ export class AdjacencyList {
     }
     return -1;
   }
+
+  flattenSubgraphs() {
+    this.nodes.map(node => node.subgraphs = [this.id]);
+  }
 }
 
 export class Node {
@@ -72,6 +90,8 @@ export class Node {
   label = ''
   // List of node names this node links to.
   adjacentEdges = [];
+  // Which subgraph IDs this node belongs to.
+  subgraphs = [];
 
   clone() {
     const copy = new Node();
@@ -94,4 +114,28 @@ export class Edge {
     copy.isOpposite = this.isOpposite;
     return copy;
   }
+}
+
+function uuid() {
+  if (globalThis.crypto) {
+    return crypto.randomUUID();
+  } else {
+    return generateUUID();
+  }
+}
+
+function generateUUID() { // Public Domain/MIT
+  var d = new Date().getTime();//Timestamp
+  var d2 = ((typeof performance !== 'undefined') && performance.now && (performance.now()*1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16;//random number between 0 and 16
+      if(d > 0){//Use timestamp until depleted
+          r = (d + r)%16 | 0;
+          d = Math.floor(d/16);
+      } else {//Use microseconds since page-load if supported
+          r = (d2 + r)%16 | 0;
+          d2 = Math.floor(d2/16);
+      }
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
 }

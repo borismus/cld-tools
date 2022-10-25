@@ -56,8 +56,26 @@ export class CausalGraph {
   /**
    * @returns {string} This graph represented in mermaid.js.
    */
-  toMermaid() {
+  toMermaid(oppositeEdgeLabel = 'o', sameEdgeLabel = 's') {
+    let out = 'graph TD\n';
+    // Go through adjacency list and spit out mermaid.js graph, edge by edge.
+    for (const fromNode of this.adjList.nodes) {
+      for (const edge of fromNode.adjacentEdges) {
+        const toNode = this.adjList.findNodeByName(edge.targetName);
+        const arrow = edge.isOpposite ? `-.->` : `-->`;
+        const line = `${nodeToMermaid(fromNode)} ${arrow} ${nodeToMermaid(toNode)}\n`;
+        out += line;
+      }
+    }
+    return out.trim();
+  }
 
+  /**
+   * XYZ
+   * @param {CausalGraph} graph
+   */
+  concat(graph) {
+    this.adjList.concat(graph.adjList);
   }
 }
 
@@ -81,4 +99,8 @@ export class CausalLoop {
       return 'BALANCING';
     }
   }
+}
+
+function nodeToMermaid(node) {
+  return `${node.name}[${node.label}]`;
 }

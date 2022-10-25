@@ -170,4 +170,72 @@ test(`Find balancing loops in simple causal graphs`, t => {
   const loops = graph.analyzeLoops();
   t.is(loops.length, 1);
   t.is(loops[0].type, 'REINFORCING');
-})
+});
+
+test(`Convert to mermaid.js graph`, t => {
+  const graph = new CausalGraph(`
+  Parent Funding (PF) -> Academic Results (AR)
+  AR -> Satisfaction Gap (SG)
+  SG -> School Enrollment (SE)
+  SE o-> PF
+  `);
+  const mermaid = graph.toMermaid();
+  const lines = mermaid.split('\n');
+
+  t.true(mermaid.startsWith('graph TD'));
+  t.is(lines[0], 'graph TD');
+  t.is(lines[1], `PF[Parent Funding] --> AR[Academic Results]`);
+  t.is(lines[lines.length - 1], `SE[School Enrollment] -.-> PF[Parent Funding]`);
+});
+
+test(`Graph concatenation`, t => {
+  const graph1 = new CausalGraph(`
+  Parent Funding (PF) -> Academic Results (AR)
+  AR -> Satisfaction Gap (SG)
+  SG -> School Enrollment (SE)
+  SE o-> PF
+  `);
+  const graph2 = new CausalGraph(`
+  AR (Academic Results) -> School Inequality (SI)
+  SI o-> Parent Funding (PF)
+  `);
+  graph1.concat(graph2);
+
+  t.is(graph1.adjList.nodes.length, 6);
+});
+
+test(`Subgraph IDs are assigned`, t => {
+  const graph1 = new CausalGraph(`
+  Hello (A) -> World (B)
+  B -> C
+  `);
+  t.true(graph1.adjList.id != '');
+  // Ensure just one subgraph ID here.
+  for (const node of graph1.adjList.nodes) {
+    t.is(node.subgraphs.length, 1);
+  }
+});
+
+test(`Subgraph IDs persist through concat`, t => {
+  const graph1 = new CausalGraph(`
+  A -> B
+  B -> C
+  `);
+  const graph2 = new CausalGraph(`
+  C -> A
+  D -> E
+  `);
+  graph1.concat(graph2);
+
+  t.not(graph1.adjList.id, graph2.adjList.id);
+  t.is(graph1.adjList.findNodeByName('B').subgraphs.length, 1);
+  t.is(graph1.adjList.findNodeByName('D').subgraphs.length, 1);
+  t.is(graph1.adjList.findNodeByName('E').subgraphs.length, 1);
+  t.is(graph1.adjList.findNodeByName('C').subgraphs.length, 2);
+  t.is(graph1.adjList.findNodeByName('A').subgraphs.length, 2);
+
+  t.deepEqual(graph1.adjList.findNodeByName('A').subgraphs, [graph1.adjList.id, graph2.adjList.id]);
+  t.deepEqual(graph1.adjList.findNodeByName('C').subgraphs, [graph1.adjList.id, graph2.adjList.id]);
+  t.deepEqual(graph1.adjList.findNodeByName('B').subgraphs, [graph1.adjList.id]);
+  t.deepEqual(graph1.adjList.findNodeByName('E').subgraphs, [graph2.adjList.id]);
+});

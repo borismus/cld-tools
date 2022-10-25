@@ -17,8 +17,10 @@ export function parseCGML(cgml) {
   const graph = new AdjacencyList();
   for (const line of cgml.trim().split('\n')) {
     const subGraph = parseCGMLLine(line);
-    graph.append(subGraph);
+    graph.concat(subGraph);
   }
+  // Flatten the subgraph to be just its own IDs.
+  graph.flattenSubgraphs();
   return graph;
 }
 
