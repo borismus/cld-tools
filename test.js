@@ -239,3 +239,28 @@ test(`Subgraph IDs persist through concat`, t => {
   t.deepEqual(graph1.adjList.findNodeByName('B').subgraphs, [graph1.adjList.id]);
   t.deepEqual(graph1.adjList.findNodeByName('E').subgraphs, [graph2.adjList.id]);
 });
+
+test(`Subgraphs are rendered in mermaid diagrams`, t => {
+  const graph1 = new CausalGraph(`
+  A -> B
+  B -> C
+  `);
+  const graph2 = new CausalGraph(`
+  C -> A
+  D -> E
+  `);
+  graph1.concat(graph2);
+
+  // Expect A, B, C to be part of graph 1.
+  // Expect D, E to be part of graph 2.
+  const mermaid = graph1.toMermaid();
+  console.log(mermaid);
+
+  const lines = mermaid.split('\n');
+  t.true(lines.includes('subgraph 0'));
+  t.true(lines.includes('subgraph 1'));
+});
+
+// test(`Cycles are rendered in mermaid diagrams`, t => {
+//   // How should cycles be rendered?
+// });

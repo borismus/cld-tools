@@ -1,3 +1,5 @@
+const NO_SUBGRAPH_ID = 'NO_SUBGRAPH';
+
 export class AdjacencyList {
   nodes = [];
   id = '';
@@ -79,6 +81,31 @@ export class AdjacencyList {
 
   flattenSubgraphs() {
     this.nodes.map(node => node.subgraphs = [this.id]);
+  }
+
+  getSubgraphIds() {
+    const subgraphs = [];
+    this.nodes.map(node => subgraphs.push(...node.subgraphs))
+    return new Set(subgraphs);
+  }
+
+  /**
+   * @return {Node[][]} A partitioning of nodes, so that each node belongs to
+   * its dominant subgraph.
+   */
+  partitionSubgraphs() {
+    const partition = {};
+    for (const node of this.nodes) {
+      const subgraphId = (node.subgraphs && node.subgraphs.length > 0) ?
+        node.subgraphs[0] : NO_SUBGRAPH_ID;
+
+      if (partition[subgraphId] === undefined) {
+        partition[subgraphId] = [];
+      }
+      partition[subgraphId].push(node);
+    }
+
+    return Object.values(partition);
   }
 }
 

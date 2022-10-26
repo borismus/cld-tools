@@ -56,17 +56,27 @@ export class CausalGraph {
   /**
    * @returns {string} This graph represented in mermaid.js.
    */
-  toMermaid(oppositeEdgeLabel = 'o', sameEdgeLabel = 's') {
+  toMermaid() {
     let out = 'graph TD\n';
-    // Go through adjacency list and spit out mermaid.js graph, edge by edge.
-    for (const fromNode of this.adjList.nodes) {
-      for (const edge of fromNode.adjacentEdges) {
-        const toNode = this.adjList.findNodeByName(edge.targetName);
-        const arrow = edge.isOpposite ? `-.->` : `-->`;
-        const line = `${nodeToMermaid(fromNode)} ${arrow} ${nodeToMermaid(toNode)}\n`;
-        out += line;
+
+    // Iterate through nodes in the graph, partitioning by subgraph.
+    const partitions = this.adjList.partitionSubgraphs();
+    const edges = [];
+
+    if (partitions.length === 0) {
+      throw new Error(`No partitions.`);
+    } else if (partitions.length === 1) {
+      // Just one graph.
+      out += this.nodeListToMermaidGraph(partitions[0], edges);
+    } else {
+      // Render each subgraph with a subgraph ... end declaration.
+      for (const [ind, nodeList] of partitions.entries()) {
+        out += `subgraph ${ind}\n`;
+        out += this.nodeListToMermaidGraph(nodeList, edges);
+        out += `end\n`;
       }
     }
+
     return out.trim();
   }
 
@@ -76,6 +86,23 @@ export class CausalGraph {
    */
   concat(graph) {
     this.adjList.concat(graph.adjList);
+  }
+
+  nodeListToMermaidGraph(nodes, outEdges) {
+    let out = '';
+    // Go through adjacency list and spit out mermaid.js graph, edge by edge.
+    for (const fromNode of nodes) {
+      for (const edge of fromNode.adjacentEdges) {
+        const toNode = this.adjList.findNodeByName(edge.targetName);
+        const arrow = edge.isOpposite ? `-.->` : `-->`;
+        const line = `${nodeToMermaid(fromNode)} ${arrow} ${nodeToMermaid(toNode)}\n`;
+        out += line;
+
+        // Also save the edges that were added to the list of edges.
+        outEdges.push(edge);
+      }
+    }
+    return out;
   }
 }
 
