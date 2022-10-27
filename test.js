@@ -321,8 +321,8 @@ test(`Subgraphs are rendered in mermaid diagrams`, t => {
   const mermaid = graph1.toMermaid();
 
   const lines = mermaid.split('\n');
-  t.true(lines.includes('subgraph 0'));
-  t.true(lines.includes('subgraph 1'));
+  t.true(lines.includes('subgraph Graph 1'));
+  t.true(lines.includes('subgraph Graph 2'));
 });
 
 test(`Cycles are rendered in mermaid diagrams`, t => {

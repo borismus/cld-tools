@@ -77,7 +77,7 @@ export class CausalGraph {
     } else {
       // Render each subgraph with a subgraph ... end declaration.
       for (const [ind, nodeList] of partitions.entries()) {
-        out += `subgraph ${ind}\n`;
+        out += `subgraph Graph ${ind + 1}\n`;
         out += this.nodeListToMermaidGraph(nodeList, loops);
         out += `end\n`;
       }
@@ -117,7 +117,7 @@ export class CausalGraph {
     for (const [ind, loop] of loops.entries()) {
       if (loop.isDirectlyConnected(fromNode, toNode)) {
         // console.log(`${fromNode.label} is connected to ${toNode.label}`);
-        loopLabels.push(`${loop.typeShort}${ind}`);
+        loopLabels.push(`${loop.typeShort}${ind + 1}`);
       }
     }
     let label = '';
