@@ -82,7 +82,7 @@ test(`More complex adj list to num graph`, t => {
   SI o-> PF
   `);
   const numericGraph = adjacencyListToNumericGraph(result);
-  t.deepEqual(numericGraph, [[1], [2,4], [3], [0], [0]]);
+  t.deepEqual(numericGraph, [[1], [2, 4], [3], [0], [0]]);
 })
 
 test(`Tarjan's SCC algorithm for single loop`, t => {
@@ -339,20 +339,28 @@ test(`Cycles are rendered in mermaid diagrams`, t => {
   Academic Results (AR) -> School Inequality (SI)
   SI o-> Parent Funding (PF)
   `);
-
-  // console.log(graph1.toMermaid());
-  // console.log('\n---\n');
-  // console.log(graph2.toMermaid());
-  // console.log('\n---\n');
-
   graph1.concat(graph2);
 
   const mermaid = graph1.toMermaid({labelLoops: true});
   console.log(mermaid);
 });
 
+test(`partitionedNodePairs works reasonably`, t => {
+  const graph1 = new CausalGraph(`
+  Parent Funding (PF) -> Academic Results (AR)
+  AR -> Satisfaction Gap (SG)
+  SG -> School Enrollment (SE)
+  SE o-> PF
+  `);
+  const graph2 = new CausalGraph(`
+  Academic Results (AR) -> School Inequality (SI)
+  SI o-> Parent Funding (PF)
+  `);
+  graph1.concat(graph2);
 
+  const pnp = graph1.adjList.partitionedNodePairs();
+  console.log(pnp);
 
-// test(`Find multiple loops in more complex graphs`, t => {
-
-// });
+  // const mermaid = graph1.toMermaid2();
+  // console.log(mermaid);
+});

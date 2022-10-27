@@ -69,8 +69,6 @@ export class CausalGraph {
     // Iterate through nodes in the graph, partitioning by subgraph.
     const partitions = this.adjList.partitionSubgraphs();
 
-    // Get partitioned node pairs, and go from there.
-
     if (partitions.length === 0) {
       throw new Error(`No partitions.`);
     } else if (partitions.length === 1) {
@@ -86,6 +84,13 @@ export class CausalGraph {
     }
 
     return out.trim();
+  }
+
+  toMermaid2() {
+    // Get partitioned node pairs, and go from there.
+    const [partitioned, unpartitioned] = this.adjList.partitionedNodePairs();
+    console.log(`Got ${partitioned.length} partitions.`);
+    console.log(`Got ${unpartitioned.length} unpartitioned pairs.`);
   }
 
   /**
