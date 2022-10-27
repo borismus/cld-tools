@@ -344,23 +344,3 @@ test(`Cycles are rendered in mermaid diagrams`, t => {
   const mermaid = graph1.toMermaid({labelLoops: true});
   console.log(mermaid);
 });
-
-test(`partitionedNodePairs works reasonably`, t => {
-  const graph1 = new CausalGraph(`
-  Parent Funding (PF) -> Academic Results (AR)
-  AR -> Satisfaction Gap (SG)
-  SG -> School Enrollment (SE)
-  SE o-> PF
-  `);
-  const graph2 = new CausalGraph(`
-  Academic Results (AR) -> School Inequality (SI)
-  SI o-> Parent Funding (PF)
-  `);
-  graph1.concat(graph2);
-
-  const pnp = graph1.adjList.partitionedNodePairs();
-  console.log(pnp);
-
-  // const mermaid = graph1.toMermaid2();
-  // console.log(mermaid);
-});

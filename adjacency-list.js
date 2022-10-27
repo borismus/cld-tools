@@ -111,54 +111,6 @@ export class AdjacencyList {
 
     return Object.values(partition);
   }
-
-  /**
-   * @return {NodePair[]} A list of list of all node pairs connected by
-   * edges in this graph.
-   */
-  allNodePairs() {
-    const out = [];
-    for (const node of this.nodes) {
-      for (const edge of node.adjacentEdges) {
-        out.push(new NodePair(node, this.findNodeByName(edge.targetName)));
-      }
-    }
-    return out;
-  }
-
-  /**
-   *
-   * @returns [NodePair[][], NodePair[]] Partitioned NodePairs as well as
-   * unpartitioned nodepairs.
-   */
-  partitionedNodePairs() {
-    // Get all node pairs in this graph.
-    const nodePairs = this.allNodePairs();
-    // Get the partitioned subgraphs.
-    const partition = this.partitionSubgraphs();
-    const partitionedPairs = partition.map(p => []);
-    const unpartitionedPairs = [];
-    // Arrange node pairs to map onto the partitions.
-    for (const nodePair of nodePairs) {
-      // For each node pair, check if its source and target is in the same
-      // partition. If so, it belongs to that partition. Otherwise, it belongs
-      // to the unpartitioned list.
-      let isPartitioned = false;
-      for (const [ind, part] of partition.entries()) {
-        if (part.includes(nodePair.from) && part.includes(nodePair.to)) {
-          console.log(`Partition ind=${ind} includes both ${nodePair.from.name} and ${nodePair.to.name}`);
-          partitionedPairs[ind].push(nodePair);
-          isPartitioned = true;
-          break;
-        }
-      }
-      if (!isPartitioned) {
-        unpartitionedPairs.push(nodePair);
-      }
-    }
-
-    return [partitionedPairs, unpartitionedPairs];
-  }
 }
 
 export class NodePair {

@@ -69,28 +69,24 @@ export class CausalGraph {
     // Iterate through nodes in the graph, partitioning by subgraph.
     const partitions = this.adjList.partitionSubgraphs();
 
+    // 1. Layout the structure of the nodes into subgraphs.
     if (partitions.length === 0) {
       throw new Error(`No partitions.`);
     } else if (partitions.length === 1) {
       // Just one graph.
-      out += this.nodeListToMermaidGraph(partitions[0], loops);
+      out += this.nodeListToMermaidNodes(partitions[0]);
     } else {
       // Render each subgraph with a subgraph ... end declaration.
       for (const [ind, nodeList] of partitions.entries()) {
         out += `subgraph Graph ${ind + 1}\n`;
-        out += this.nodeListToMermaidGraph(nodeList, loops);
+        this.nodeListToMermaidNodes(nodeList);
         out += `end\n`;
       }
     }
 
-    return out.trim();
-  }
+    out += this.nodeListToMermaidEdges(this.adjList.nodes, loops);
 
-  toMermaid2() {
-    // Get partitioned node pairs, and go from there.
-    const [partitioned, unpartitioned] = this.adjList.partitionedNodePairs();
-    console.log(`Got ${partitioned.length} partitions.`);
-    console.log(`Got ${unpartitioned.length} unpartitioned pairs.`);
+    return out.trim();
   }
 
   /**
@@ -101,7 +97,7 @@ export class CausalGraph {
     this.adjList.concat(graph.adjList);
   }
 
-  nodeListToMermaidGraph(nodes, loops) {
+  nodeListToMermaidEdges(nodes, loops) {
     let out = '';
     // Go through adjacency list and spit out mermaid.js graph, edge by edge.
     for (const fromNode of nodes) {
@@ -115,6 +111,14 @@ export class CausalGraph {
         // Also save the edges that were added to the list of edges.
         // outEdges.push(edge);
       }
+    }
+    return out;
+  }
+
+  nodeListToMermaidNodes(nodeList) {
+    let out = '';
+    for (const node of nodeList) {
+      out += `${node.name}\n`;
     }
     return out;
   }
