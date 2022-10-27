@@ -9,6 +9,7 @@ export class CausalGraph {
   // Graphs are likely to be pretty sparse, lending itself well to an adjacency
   // list. This is a collection of Nodes.
   adjList = null;
+  mermaidOrientation = 'TD'
 
   constructor(cgml) {
     this.adjList = parseCGML(cgml);
@@ -57,7 +58,7 @@ export class CausalGraph {
    * @returns {string} This graph represented in mermaid.js.
    */
   toMermaid({labelLoops = false} = {}) {
-    let out = 'graph TD\n';
+    let out = `graph ${this.mermaidOrientation}\n`;
 
     // Calculate loops and mark each loop with R or B depending on loop type,
     // as well as the cycle index.
@@ -79,7 +80,7 @@ export class CausalGraph {
       // Render each subgraph with a subgraph ... end declaration.
       for (const [ind, nodeList] of partitions.entries()) {
         out += `subgraph Graph ${ind + 1}\n`;
-        this.nodeListToMermaidNodes(nodeList);
+        out += this.nodeListToMermaidNodes(nodeList);
         out += `end\n`;
       }
     }

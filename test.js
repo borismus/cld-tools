@@ -184,7 +184,7 @@ test(`Convert to mermaid.js graph`, t => {
 
   t.true(mermaid.startsWith('graph TD'));
   t.is(lines[0], 'graph TD');
-  t.is(lines[1], `PF[Parent Funding] --> AR[Academic Results]`);
+  t.true(lines.includes(`PF[Parent Funding] --> AR[Academic Results]`));
   t.is(lines[lines.length - 1], `SE[School Enrollment] -.-> PF[Parent Funding]`);
 });
 
@@ -342,5 +342,26 @@ test(`Cycles are rendered in mermaid diagrams`, t => {
   graph1.concat(graph2);
 
   const mermaid = graph1.toMermaid({labelLoops: true});
+  const lines = mermaid.split('\n');
+  t.true(lines.includes(`AR[Academic Results] -->|B2| SI[School Inequality]`));
+  t.true(lines.includes(`SI[School Inequality] -.->|B2| PF[Parent Funding]`));
+});
+
+test(`Reinforcing loops are labeled in mermaid diagrams`, t => {
+  const g1 = new CausalGraph(`
+  A -> B
+  B -> C
+  A -> D
+  `);
+  const g2 = new CausalGraph(`
+  C -> A
+  D -> C
+  C o-> E
+  E -> A
+  F -> B
+  C -> F
+  `);
+  g1.concat(g2);
+  const mermaid = g1.toMermaid({labelLoops: true});
   console.log(mermaid);
 });
