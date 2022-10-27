@@ -18,14 +18,13 @@ export class AdjacencyList {
       const thisSource = this.findNodeByName(otherSource.name);
       if (thisSource === null) {
         // If it's not found, add it and all of its adjacent nodes.
-        // console.log(`append: ${otherSource.name} not found: adding wholesale.`);
         const source = otherSource.clone();
-        source.subgraphs.push(otherAL.id);
+        // console.log(`append: ${otherSource.name} not found: adding wholesale.`, source);
         this.nodes.push(source);
       } else {
         // If this source is found, see if the other source points to any
         // other targets.
-        // console.log(`Found otherSource`, otherSource);
+        // console.log(`Found node named "${otherSource.name}":`, thisSource);
         for (const edge of otherSource.adjacentEdges) {
           const otherTargetName = edge.targetName;
           const otherTarget = otherAL.findNodeByName(edge.targetName);
@@ -39,19 +38,24 @@ export class AdjacencyList {
           // Otherwise, check if the node exists in the graph at all.
           let thisTarget = this.findNodeByName(otherTargetName);
           if (thisTarget === null) {
-            // console.log(`Did not find node named "${otherTargetName}". Creating.`);
+            // The other target doesn't exist in this node.
+            // console.log(`Did not find target node named "${otherTargetName}". Creating.`);
             thisTarget = otherTarget.clone();
-            thisTarget.subgraphs.push(this.id);
+            // Reset the adjacent edges for this target.
+            thisTarget.adjacentEdges = [];
+            // thisTarget.subgraphs.push(this.id);
             this.nodes.push(thisTarget);
           } else {
             // This target exists in the graph, already, but still add the other
             // graph as a subgraph.
-            thisTarget.subgraphs.push(otherAL.id);
+            // console.log(`Found target node named "${otherTargetName}" in graph.`);
+            // thisTarget.subgraphs.push(otherAL.id);
           }
 
           // And then add the name to our adjacency list.
+          // console.log(`Adding edge "${thisSource.name}" -> "${edge.targetName}"`);
+          // console.log(`Existing edges`, thisSource.adjacentEdges);
           thisSource.adjacentEdges.push(edge.clone());
-          thisSource.subgraphs.push(otherAL.id);
         }
       }
     }
@@ -125,6 +129,7 @@ export class Node {
     copy.name = this.name;
     copy.label = this.label;
     copy.adjacentEdges = this.adjacentEdges.map(edge => edge.clone());
+    copy.subgraphs = this.subgraphs.slice();
     return copy;
   }
 }

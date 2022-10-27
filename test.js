@@ -196,12 +196,24 @@ test(`Graph concatenation`, t => {
   SE o-> PF
   `);
   const graph2 = new CausalGraph(`
-  AR (Academic Results) -> School Inequality (SI)
+  AR -> School Inequality (SI)
   SI o-> Parent Funding (PF)
   `);
+
   graph1.concat(graph2);
 
-  t.is(graph1.adjList.nodes.length, 6);
+  t.is(graph1.adjList.nodes.length, 5);
+  t.is(graph1.adjList.findNodeByName('PF').adjacentEdges.length, 1);
+  t.is(graph1.adjList.findNodeByName('AR').adjacentEdges.length, 2);
+  t.is(graph1.adjList.findNodeByName('SG').adjacentEdges.length, 1);
+  t.is(graph1.adjList.findNodeByName('SE').adjacentEdges.length, 1);
+
+  const arEdgeNames = graph1.adjList.findNodeByName('AR').adjacentEdges.map(e => e.targetName);
+  t.deepEqual(arEdgeNames, ['SG', 'SI']);
+
+  // Check that we only have one outgoing edge for SI.
+  const siEdges = graph1.adjList.findNodeByName('SI').adjacentEdges;
+  t.is(siEdges.length, 1);
 });
 
 test(`Subgraph IDs are assigned`, t => {
@@ -231,13 +243,66 @@ test(`Subgraph IDs persist through concat`, t => {
   t.is(graph1.adjList.findNodeByName('B').subgraphs.length, 1);
   t.is(graph1.adjList.findNodeByName('D').subgraphs.length, 1);
   t.is(graph1.adjList.findNodeByName('E').subgraphs.length, 1);
-  t.is(graph1.adjList.findNodeByName('C').subgraphs.length, 2);
-  t.is(graph1.adjList.findNodeByName('A').subgraphs.length, 2);
+  t.is(graph1.adjList.findNodeByName('C').subgraphs.length, 1);
+  t.is(graph1.adjList.findNodeByName('A').subgraphs.length, 1);
 
-  t.deepEqual(graph1.adjList.findNodeByName('A').subgraphs, [graph1.adjList.id, graph2.adjList.id]);
-  t.deepEqual(graph1.adjList.findNodeByName('C').subgraphs, [graph1.adjList.id, graph2.adjList.id]);
+  t.deepEqual(graph1.adjList.findNodeByName('A').subgraphs, [graph1.adjList.id]);
+  t.deepEqual(graph1.adjList.findNodeByName('C').subgraphs, [graph1.adjList.id]);
   t.deepEqual(graph1.adjList.findNodeByName('B').subgraphs, [graph1.adjList.id]);
   t.deepEqual(graph1.adjList.findNodeByName('E').subgraphs, [graph2.adjList.id]);
+});
+
+test(`Node membership remains correct through subgraphs`, t => {
+  const graph1 = new CausalGraph(`
+  A -> B
+  B -> C
+  `);
+  const graph2 = new CausalGraph(`
+  C -> A
+  A -> D
+  E -> B
+  `);
+  graph1.concat(graph2);
+
+  // Even though there's a link from A -> D and B -> E, expect D and E to be
+  // part of graph2.
+  t.deepEqual(graph1.adjList.findNodeByName('D').subgraphs, [graph2.adjList.id]);
+  t.deepEqual(graph1.adjList.findNodeByName('E').subgraphs, [graph2.adjList.id]);
+});
+
+test(`Partitions work as expected.`, t => {
+  const graph1 = new CausalGraph(`
+  A -> B
+  B -> C
+  `);
+  const graph2 = new CausalGraph(`
+  C -> A
+  A -> D
+  E -> B
+  `);
+  graph1.concat(graph2);
+
+  const partition = graph1.adjList.partitionSubgraphs();
+  const partitionLengths = partition.map(p => p.length);
+  t.deepEqual(partitionLengths, [3, 2]);
+});
+
+test(`More complex partitions work as expected.`, t => {
+  const graph1 = new CausalGraph(`
+  Parent Funding (PF) -> Academic Results (AR)
+  AR -> Satisfaction Gap (SG)
+  SG -> School Enrollment (SE)
+  SE o-> PF
+  `);
+  const graph2 = new CausalGraph(`
+  Academic Results (AR) -> School Inequality (SI)
+  SI o-> Parent Funding (PF)
+  `);
+  graph1.concat(graph2);
+
+  const partition = graph1.adjList.partitionSubgraphs();
+  const partitionLengths = partition.map(p => p.length);
+  t.deepEqual(partitionLengths, [4, 1]);
 });
 
 test(`Subgraphs are rendered in mermaid diagrams`, t => {
@@ -254,13 +319,40 @@ test(`Subgraphs are rendered in mermaid diagrams`, t => {
   // Expect A, B, C to be part of graph 1.
   // Expect D, E to be part of graph 2.
   const mermaid = graph1.toMermaid();
-  console.log(mermaid);
 
   const lines = mermaid.split('\n');
   t.true(lines.includes('subgraph 0'));
   t.true(lines.includes('subgraph 1'));
 });
 
-// test(`Cycles are rendered in mermaid diagrams`, t => {
-//   // How should cycles be rendered?
+test(`Cycles are rendered in mermaid diagrams`, t => {
+  // Verify that the edges that belong to a cycle are labeled with [RB][0-9]+,
+  // for example R1 for the first reinforcing loop, or B3 for the third
+  // balancing loop.
+  const graph1 = new CausalGraph(`
+  Parent Funding (PF) -> Academic Results (AR)
+  AR -> Satisfaction Gap (SG)
+  SG -> School Enrollment (SE)
+  SE o-> PF
+  `);
+  const graph2 = new CausalGraph(`
+  Academic Results (AR) -> School Inequality (SI)
+  SI o-> Parent Funding (PF)
+  `);
+
+  // console.log(graph1.toMermaid());
+  // console.log('\n---\n');
+  // console.log(graph2.toMermaid());
+  // console.log('\n---\n');
+
+  graph1.concat(graph2);
+
+  const mermaid = graph1.toMermaid({labelLoops: true});
+  console.log(mermaid);
+});
+
+
+
+// test(`Find multiple loops in more complex graphs`, t => {
+
 // });

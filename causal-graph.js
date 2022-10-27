@@ -33,7 +33,7 @@ export class CausalGraph {
         const nextNode = cl.nodes[(ind + 1) % cl.nodes.length];
         // Find the edge in this node, pointing to nextNode.
         for (const edge of node.adjacentEdges) {
-          if (edge.targetName = nextNode.name) {
+          if (edge.targetName === nextNode.name) {
             // Edge found.
             theEdge = edge;
             break;
@@ -56,23 +56,29 @@ export class CausalGraph {
   /**
    * @returns {string} This graph represented in mermaid.js.
    */
-  toMermaid() {
+  toMermaid({labelLoops = false} = {}) {
     let out = 'graph TD\n';
+
+    // Calculate loops and mark each loop with R or B depending on loop type,
+    // as well as the cycle index.
+    const loops = labelLoops ? this.analyzeLoops() : [];
+    if (labelLoops) {
+      // console.log(`Found ${loops.length} loops.`);
+    }
 
     // Iterate through nodes in the graph, partitioning by subgraph.
     const partitions = this.adjList.partitionSubgraphs();
-    const edges = [];
 
     if (partitions.length === 0) {
       throw new Error(`No partitions.`);
     } else if (partitions.length === 1) {
       // Just one graph.
-      out += this.nodeListToMermaidGraph(partitions[0], edges);
+      out += this.nodeListToMermaidGraph(partitions[0], loops);
     } else {
       // Render each subgraph with a subgraph ... end declaration.
       for (const [ind, nodeList] of partitions.entries()) {
         out += `subgraph ${ind}\n`;
-        out += this.nodeListToMermaidGraph(nodeList, edges);
+        out += this.nodeListToMermaidGraph(nodeList, loops);
         out += `end\n`;
       }
     }
@@ -88,21 +94,37 @@ export class CausalGraph {
     this.adjList.concat(graph.adjList);
   }
 
-  nodeListToMermaidGraph(nodes, outEdges) {
+  nodeListToMermaidGraph(nodes, loops) {
     let out = '';
     // Go through adjacency list and spit out mermaid.js graph, edge by edge.
     for (const fromNode of nodes) {
       for (const edge of fromNode.adjacentEdges) {
         const toNode = this.adjList.findNodeByName(edge.targetName);
+        const label = this.getLoopLabel(fromNode, toNode, loops);
         const arrow = edge.isOpposite ? `-.->` : `-->`;
-        const line = `${nodeToMermaid(fromNode)} ${arrow} ${nodeToMermaid(toNode)}\n`;
+        const line = `${nodeToMermaid(fromNode)} ${arrow}${label} ${nodeToMermaid(toNode)}\n`;
         out += line;
 
         // Also save the edges that were added to the list of edges.
-        outEdges.push(edge);
+        // outEdges.push(edge);
       }
     }
     return out;
+  }
+
+  getLoopLabel(fromNode, toNode, loops) {
+    const loopLabels = [];
+    for (const [ind, loop] of loops.entries()) {
+      if (loop.isDirectlyConnected(fromNode, toNode)) {
+        // console.log(`${fromNode.label} is connected to ${toNode.label}`);
+        loopLabels.push(`${loop.typeShort}${ind}`);
+      }
+    }
+    let label = '';
+    if (loopLabels.length > 0) {
+      label = `|${loopLabels.join(', ')}|`;
+    }
+    return label;
   }
 }
 
@@ -119,12 +141,39 @@ export class CausalLoop {
    * @returns "BALANCING" | "REINFORCING"
    */
   get type() {
+    return this.isBalancing ? 'BALANCING' : 'REINFORCING';
+  }
+
+  get isBalancing() {
     const oppositeEdges = this.edges.filter(edge => edge.isOpposite);
-    if (oppositeEdges.length % 2 === 0) {
-      return 'REINFORCING';
-    } else {
-      return 'BALANCING';
+    return oppositeEdges.length % 2 !== 0;
+  }
+
+  get typeShort() {
+    return this.isBalancing ? 'B' : 'R';
+  }
+
+  /**
+   *
+   * @param {Node} fromNode
+   * @param {Node} toNode
+   * @returns {boolean} true iff this loop contains an edge going from fromNode
+   * to toNode.
+   */
+  isDirectlyConnected(fromNode, toNode) {
+    // For two nodes to be directly connected and part of the loop, the edge
+    // between them needs to be inside the edge.
+
+    let theEdge = null;
+    for (const edge of fromNode.adjacentEdges) {
+      if (edge.targetName === toNode.name) {
+        theEdge = edge;
+        break;
+      }
     }
+
+    // Check that this edge exists in our list.
+    return this.edges.includes(theEdge);
   }
 }
 
