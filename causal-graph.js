@@ -69,6 +69,8 @@ export class CausalGraph {
     // Iterate through nodes in the graph, partitioning by subgraph.
     const partitions = this.adjList.partitionSubgraphs();
 
+    // Get partitioned node pairs, and go from there.
+
     if (partitions.length === 0) {
       throw new Error(`No partitions.`);
     } else if (partitions.length === 1) {

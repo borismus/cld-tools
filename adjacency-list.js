@@ -111,6 +111,40 @@ export class AdjacencyList {
 
     return Object.values(partition);
   }
+
+  /**
+   * @return {NodePair[]} A list of list of all node pairs connected by
+   * edges in this graph.
+   */
+  allNodePairs() {
+    const out = [];
+    for (const node of this.nodes) {
+      for (const edge of node.adjacentEdges) {
+        out.push(new NodePair(node, this.findNodeByName(edge.targetName)));
+      }
+    }
+    return out;
+  }
+
+  partitionedNodePairs() {
+    // Get all node pairs in this graph.
+    const nodePairs = this.allNodePairs();
+    // Get the partitioned subgraphs.
+    const partition = this.partitionSubgraphs();
+    // Arrange node pairs to map onto the partitions.
+
+    return [nodePairs];
+  }
+}
+
+export class NodePair {
+  from = null;
+  to = null;
+
+  constructor(from, to) {
+    this.from = from;
+    this.to = to;
+  }
 }
 
 export class Node {
