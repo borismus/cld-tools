@@ -21,11 +21,11 @@ export class CausalGraphElement extends LitElement {
     this.cgml = '';
   }
 
-  handleTextareaInput(e) {
-    console.log(`Input`);
+  handleTextareaBlur(e) {
+    console.log(`Blur`);
   }
 
-  handleTextareaBlur(e) {
+  handleTextareaInput(e) {
     const textarea = e.target;
     const cgml = textarea.value;
     this.cgml = cgml;

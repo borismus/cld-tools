@@ -27,6 +27,7 @@ function onCGMLChange() {
   for (const graph of graphs.slice(1)) {
     finalGraph.concat(graph);
   }
+  finalGraph.mermaidOrientation = 'LR';
 
   mermaid.mermaidAPI.render('graphDiv2', finalGraph.toMermaid({labelLoops: true}), svgCode => {
     console.log(`mermaid.mermaidAPI.render: ${svgCode.length} chars.`);
