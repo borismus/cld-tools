@@ -66,6 +66,10 @@ export class CausalGraph {
     if (labelLoops) {
       // console.log(`Found ${loops.length} loops.`);
     }
+    // Give each node an index for mermaid output purposes.
+    for (const [ind, node] of this.adjList.nodes.entries()) {
+      node.index = ind;
+    }
 
     // Iterate through nodes in the graph, partitioning by subgraph.
     const partitions = this.adjList.partitionSubgraphs();
@@ -75,12 +79,12 @@ export class CausalGraph {
       throw new Error(`No partitions.`);
     } else if (partitions.length === 1) {
       // Just one graph.
-      out += this.nodeListToMermaidNodes(partitions[0]);
+      out += nodeListToMermaidNodes(partitions[0]);
     } else {
       // Render each subgraph with a subgraph ... end declaration.
       for (const [ind, nodeList] of partitions.entries()) {
         out += `subgraph Graph ${ind + 1}\n`;
-        out += this.nodeListToMermaidNodes(nodeList);
+        out += nodeListToMermaidNodes(nodeList);
         out += `end\n`;
       }
     }
@@ -112,14 +116,6 @@ export class CausalGraph {
         // Also save the edges that were added to the list of edges.
         // outEdges.push(edge);
       }
-    }
-    return out;
-  }
-
-  nodeListToMermaidNodes(nodeList) {
-    let out = '';
-    for (const node of nodeList) {
-      out += `${node.name}\n`;
     }
     return out;
   }
@@ -190,5 +186,13 @@ export class CausalLoop {
 }
 
 function nodeToMermaid(node) {
-  return `${node.name}[${node.label}]`;
+  return `${node.index}[${node.label}]`;
+}
+
+function nodeListToMermaidNodes(nodeList) {
+  let out = '';
+  for (const node of nodeList) {
+    out += `${nodeToMermaid(node)}\n`;
+  }
+  return out;
 }

@@ -3,6 +3,7 @@ import {CausalGraph} from './causal-graph.js';
 import {parseCGML, parseCGMLLine} from "./cgml.js";
 import {adjacencyListToNumericGraph, tarjanSCC} from './tarjan.js';
 
+
 test('Parse single CGML line', t => {
   const result = parseCGMLLine('Parent Funding (PF) -> Educational Outcomes (EO)');
   t.is(result.nodes.length, 2);
@@ -143,6 +144,11 @@ test(`Tarjan's SCC algorithm for multiple loops`, t => {
   t.false(threeNames.includes('SG'));
 });
 
+test('Parse simple graphs without labels', t => {
+  const graph = new CausalGraph('Parent Funding -> Educational Outcomes');
+  t.is(graph.adjList.nodes.length, 2);
+});
+
 test(`Find reinforcing loops in simple causal graphs`, t => {
   const graph = new CausalGraph(`
   Parent Funding (PF) -> Academic Results (AR)
@@ -180,12 +186,10 @@ test(`Convert to mermaid.js graph`, t => {
   SE o-> PF
   `);
   const mermaid = graph.toMermaid();
-  const lines = mermaid.split('\n');
 
   t.true(mermaid.startsWith('graph TD'));
-  t.is(lines[0], 'graph TD');
-  t.true(lines.includes(`PF[Parent Funding] --> AR[Academic Results]`));
-  t.is(lines[lines.length - 1], `SE[School Enrollment] -.-> PF[Parent Funding]`);
+  t.not(mermaid.match(/^.*Academic Results.*-->.*Satisfaction Gap.*$/gm), null);
+  t.not(mermaid.match(/^.*School Enrollment.*-.->.*Parent Funding.*$/gm), null);
 });
 
 test(`Graph concatenation`, t => {
@@ -342,12 +346,12 @@ test(`Cycles are rendered in mermaid diagrams`, t => {
   graph1.concat(graph2);
 
   const mermaid = graph1.toMermaid({labelLoops: true});
-  const lines = mermaid.split('\n');
-  t.true(lines.includes(`AR[Academic Results] -->|B2| SI[School Inequality]`));
-  t.true(lines.includes(`SI[School Inequality] -.->|B2| PF[Parent Funding]`));
+  t.not(mermaid.match(/^.*Academic Results.*-.->.*|B2|.*School Inequality.*$/gm), null);
+  t.not(mermaid.match(/^.*School Inequality.*-.->.*|B2|.*Parent Funding.*$/gm), null);
+
 });
 
-test(`Reinforcing loops are labeled in mermaid diagrams`, t => {
+test(`Reinforcing and balancing loops are labeled in complex mermaid diagrams`, t => {
   const g1 = new CausalGraph(`
   A -> B
   B -> C
@@ -363,5 +367,7 @@ test(`Reinforcing loops are labeled in mermaid diagrams`, t => {
   `);
   g1.concat(g2);
   const mermaid = g1.toMermaid({labelLoops: true});
-  console.log(mermaid);
+
+  t.not(mermaid.match(/^.*F.*-->.*|R5|.*B.*$/gm), null);
+  t.not(mermaid.match(/^.*C.*-->.*|R5|.*F.*$/gm), null);
 });
