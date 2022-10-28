@@ -8,6 +8,13 @@ window.addEventListener('DOMContentLoaded', e => {
   for (const graph of graphs) {
     graph.addEventListener('cgml-change', onCGMLChange);
   }
+
+  const button = document.querySelector('button#add');
+  button.addEventListener('click', e => {
+    const graph = new CausalGraphElement();
+    graph.addEventListener('cgml-change', onCGMLChange);
+    root.append(graph);
+  });
 });
 
 function onCGMLChange() {
