@@ -1,6 +1,7 @@
 import test from 'ava';
 import {CausalGraph} from './causal-graph.js';
-import {parseCGML, parseCGMLLine} from "./cgml.js";
+import {parseCGML, parseCGMLLine} from './cgml.js';
+import {GraphSimulatorSimple} from './graph-simulator.js';
 import {adjacencyListToNumericGraph, tarjanSCC} from './tarjan.js';
 
 
@@ -370,4 +371,138 @@ test(`Reinforcing and balancing loops are labeled in complex mermaid diagrams`, 
 
   t.not(mermaid.match(/^.*F.*-->.*|R5|.*B.*$/gm), null);
   t.not(mermaid.match(/^.*C.*-->.*|R5|.*F.*$/gm), null);
+});
+
+test(`Simple graph simulation initializes to correct init values.`, t => {
+  const g = new CausalGraph(`
+  Parent Funding (A) -> Academic Results (B)
+  B -> Satisfaction Gap (C)
+  C -> A
+  `);
+
+  const sim = new GraphSimulatorSimple(g, {initialValue: 3, edgeAlpha: 0.1});
+  t.is(sim.values['A'], 3);
+  t.is(sim.values['B'], 3);
+  t.is(sim.values['C'], 3);
+  t.is(sim.edgeAlpha, 0.1);
+});
+
+test(`Adjacency list inbound nodes calculations work for simple graph.`, t => {
+  const al = new parseCGML(`
+  A -> B
+  B -> C
+  `);
+  t.throws(() => al.findInboundAdjacentNodes('X'));
+  t.is(al.findInboundAdjacentNodes('A').length, 0);
+  t.is(al.findInboundAdjacentNodes('B').length, 1);
+  t.is(al.findInboundAdjacentNodes('C').length, 1);
+})
+
+test(`Adjacency list inbound nodes calculations work for more complex graph.`, t => {
+  const al = new parseCGML(`
+  A -> D
+  B -> D
+  C -> D
+  `);
+  t.is(al.findInboundAdjacentNodes('D').length, 3);
+  t.is(al.findInboundAdjacentNodes('A').length, 0);
+  t.is(al.findInboundAdjacentNodes('B').length, 0);
+  t.is(al.findInboundAdjacentNodes('C').length, 0);
+})
+
+test(`Graph sim running works reasonably for a few iterations`, t => {
+  const g = new CausalGraph(`
+  Parent Funding (A) -> Academic Results (B)
+  B -> Satisfaction Gap (C)
+  C -> A
+  `);
+  const sim = new GraphSimulatorSimple(g, {initialValue: 1, edgeAlpha: 0.1});
+
+  // First iteration.
+  sim.run();
+  t.is(sim.values['A'], 1.1);
+  t.is(sim.values['B'], 1.1);
+  t.is(sim.values['C'], 1.1);
+
+  sim.run();
+  t.is(sim.values['A'], 1.21);
+  t.is(sim.values['B'], 1.21);
+  t.is(sim.values['C'], 1.21);
+
+  sim.run();
+  t.is(sim.values['A'], 1.33);
+  t.is(sim.values['B'], 1.33);
+  t.is(sim.values['C'], 1.33);
+});
+
+test(`Graph reinforcing loop simulation and expect an exponential`, t => {
+  const g = new CausalGraph(`
+  Parent Funding (A) -> Academic Results (B)
+  B -> Satisfaction Gap (C)
+  C -> A
+  `);
+  const sim = new GraphSimulatorSimple(g, {initialValue: 1, edgeAlpha: 0.1});
+
+  for (let i = 0; i < 100; i++) {
+    sim.run();
+  }
+  // Expect the initial value plus one new value for each run.
+  t.is(sim.history['A'].length, 101);
+
+  const history = sim.getNormalizedHistory('A', 10);
+  // Expect normalized history to be the right length.
+  t.is(history.length, 10);
+
+  // console.log(history.join(' '));
+});
+
+test(`Balancing loop simulation behaves right for the first few iters.`, t => {
+  const g = new CausalGraph(`
+  A -> B
+  B o-> A
+  `);
+  const sim = new GraphSimulatorSimple(g, {initialValue: 1, edgeAlpha: 0.1});
+
+  sim.run();
+  t.is(sim.values['A'], 0.9);
+  t.is(sim.values['B'], 1.1);
+
+  sim.run();
+  t.is(sim.values['A'], 0.79);
+  t.is(sim.values['B'], 1.19);
+
+  sim.run();
+  t.is(sim.values['A'], 0.67);
+  t.is(sim.values['B'], 1.27);
+});
+
+test(`Balancing loop simulation goes to zero asymptote.`, t => {
+  const g = new CausalGraph(`
+  A -> B
+  B o-> A
+  `);
+  const sim = new GraphSimulatorSimple(g, {initialValue: 1, edgeAlpha: 0.1});
+
+  for (let i = 0; i < 100; i++) {
+    sim.run();
+  }
+  const history = sim.history['A'];
+  // console.log(history.join(' '));
+  t.true(true);
+});
+
+test(`Behavior of a reinforcing and balancing loop.`, t => {
+  const g = new CausalGraph(`
+  Potential Adopters (PA) -> Adoption Rate (AR)
+  AR o-> PA
+  AR -> Adopters
+  Adopters -> AR
+  `);
+  const sim = new GraphSimulatorSimple(g, {initialValue: 1, edgeAlpha: 0.1});
+  for (let i = 0; i < 100; i++) {
+    sim.run();
+  }
+  const history = sim.history['PA']
+  console.log(history.join(' '));
+  // t.true(true);
 });

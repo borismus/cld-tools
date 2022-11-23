@@ -111,6 +111,30 @@ export class AdjacencyList {
 
     return Object.values(partition);
   }
+
+  /** Returns a list of nodes that are adjacent to the one specified by name. */
+  findInboundAdjacentNodes(nodeName) {
+    const node = this.findNodeByName(nodeName);
+    if (!node) {
+      throw new Error(`No node found with name ${nodeName}.`);
+    }
+    const out = [];
+    for (const possibleInboundNode of this.nodes) {
+      // Ignore the same node.
+      if (node == possibleInboundNode) {
+        continue;
+      }
+      // If the argument node is in the list of adjacent edges, add to out.
+      const adjacentEdgeNames = possibleInboundNode.adjacentEdges.map(
+        edge => edge.targetName);
+      const ind = adjacentEdgeNames.indexOf(nodeName);
+      if (ind != -1) {
+        const edge = possibleInboundNode.adjacentEdges[ind];
+        out.push([possibleInboundNode, edge]);
+      }
+    }
+    return out;
+  }
 }
 
 export class NodePair {
