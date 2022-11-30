@@ -17,6 +17,10 @@ window.addEventListener('DOMContentLoaded', e => {
   });
 });
 
+window.addEventListener('unload', e => {
+  // Save the graph structure in localStorage.
+});
+
 function onCGMLChange() {
   // Get CGML from all of the graphs.
   const root = document.querySelector('#graph-list');
