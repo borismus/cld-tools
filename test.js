@@ -3,7 +3,7 @@ import {CausalGraph} from './causal-graph.js';
 import {parseCGML, parseCGMLLine} from './cgml.js';
 import {GraphSimulatorSimple} from './graph-simulator.js';
 import {adjacencyListToNumericGraph, tarjanSCC} from './tarjan.js';
-import {seriesToSparklineString as sparkline} from './sparkline.js';
+import {arrayMean, distinfo, isSuperLinearlyIncreasing, sparkline} from './sparkline.js';
 
 
 test('Parse single CGML line', t => {
@@ -381,10 +381,10 @@ test(`Simple graph simulation initializes to correct init values.`, t => {
   C -> A
   `);
 
-  const sim = new GraphSimulatorSimple(g, {initialValue: 3, edgeAlpha: 0.1});
+  const sim = new GraphSimulatorSimple(g, {initialValues: {A: 3}, edgeAlpha: 0.1});
   t.is(sim.values['A'], 3);
-  t.is(sim.values['B'], 3);
-  t.is(sim.values['C'], 3);
+  t.is(sim.values['B'], 1);
+  t.is(sim.values['C'], 1);
   t.is(sim.edgeAlpha, 0.1);
 });
 
@@ -482,7 +482,7 @@ test(`Balancing loop simulation without targets hovers around zero asymptote.`, 
   A -> B
   B o-> A
   `);
-  const sim = new GraphSimulatorSimple(g, {initialValue: 1, edgeAlpha: 0.1});
+  const sim = new GraphSimulatorSimple(g);
 
   for (let i = 0; i < 100; i++) {
     sim.run();
@@ -490,7 +490,7 @@ test(`Balancing loop simulation without targets hovers around zero asymptote.`, 
   const array = sim.history['A'];
   const average = arrayMean(array);
   // console.log(array.join(' '));
-  // console.log(average);
+  // console.log(sum);
   const delta = Math.abs(average);
   const EPS = 0.5;
   // console.log(sparkline(array));
@@ -498,37 +498,63 @@ test(`Balancing loop simulation without targets hovers around zero asymptote.`, 
   t.true(delta < EPS);
 });
 
-test(`Behavior of a reinforcing and balancing loop.`, t => {
-  const g = new CausalGraph(`
-  Potential Adopters (PA) -> Adoption Rate (AR)
-  AR o-> PA
-  AR -> Adopters
-  Adopters -> AR
-  `);
-  const sim = new GraphSimulatorSimple(g, {initialValue: 1, edgeAlpha: 0.1});
-  for (let i = 0; i < 100; i++) {
-    sim.run();
-  }
-  const history = sim.history['PA'];
-  console.log(sparkline(history));
-  t.true(true);
-});
-
 test(`Sparkline works reasonably`, t => {
-  t.is(sparkline([1,2,3,4,5,6,7,8]), '▁▂▃▄▅▆▇█');
-  t.is(sparkline([-5,-4,-3,-2,-1,0,1,2]), '▁▂▃▄▅▆▇█');
+  t.is(sparkline([1, 2, 3, 4, 5, 6, 7, 8]), '▁▂▃▄▅▆▇█');
+  t.is(sparkline([-5, -4, -3, -2, -1, 0, 1, 2]), '▁▂▃▄▅▆▇█');
   t.is(sparkline([1, 5, 10]), '▁▄█');
   t.is(sparkline([1, 100]), '▁█');
   t.is(sparkline([100, 99]), '█▁');
-  t.is(sparkline([1,2,3,4,5,6,7,8,7,6,5,4,3,2,1]), '▁▂▃▄▅▆▇█▇▆▅▄▃▂▁');
+  t.is(sparkline([1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1]), '▁▂▃▄▅▆▇█▇▆▅▄▃▂▁');
   t.is(sparkline([1.5, 0.5, 3.5, 2.5, 5.5, 4.5, 7.5, 6.5]), '▂▁▄▃▆▅█▇')
+  // TODO: Figure out the numeric problem causing this case to fail.
   // t.is(sparkline([0, 999, 4000, 4999, 7000, 7999]), '▁▁▅▅██');
 });
 
-test(`Balancing loop with target behaves right`, t => {
-
+test(`isSuperLinearlyIncreasing`, t => {
+  t.true(isSuperLinearlyIncreasing([1,2,4,8]));
+  t.false(isSuperLinearlyIncreasing([1,2,4,8,9]));
+  t.false(isSuperLinearlyIncreasing([1,2,3,4,5,6]));
+  t.false(isSuperLinearlyIncreasing([1,2,3,4,5,10]));
+  t.false(isSuperLinearlyIncreasing([5,4,2,-1,-100]));
 });
 
-function arrayMean(array) {
-  return array.reduce((a, b) => a + b) / array.length;
-}
+test(`Balancing loop with target behaves right`, t => {
+  const g = new CausalGraph(`
+  A -> B
+  B o-> A
+  `);
+  const sim = new GraphSimulatorSimple(g, {initialValue: 1, edgeAlpha: 0.1, targets: {'B': 10}});
+  for (let i = 0; i < 100; i++) {
+    sim.run();
+  }
+
+  const history = sim.history['B'];
+  // console.log(sparkline(history), Math.min(...history), Math.max(...history));
+  t.true(true);
+});
+
+test(`Balancing loop with invalid target throws error`, t => {
+  const g = new CausalGraph(`
+  A -> B
+  B o-> A
+  `);
+  t.throws(() => {
+    const sim = new GraphSimulatorSimple(g, {initialValue: 1, edgeAlpha: 0.1, targets: {'X': 10}});
+  });
+})
+
+test(`Behavior of a reinforcing and balancing loop works (adopter / saturation).`, t => {
+  const g = new CausalGraph(`
+  Potential Adopters (PA) -> Adoption Rate (AR)
+  AR o-> PA
+  AR -> Actual Adopters (A)
+  A -> AR
+  `);
+  const sim = new GraphSimulatorSimple(g, {initialValues: {A: 0, PA: 10000}});
+  for (let i = 0; i < 100; i++) {
+    sim.run();
+  }
+  const history = sim.history['A'];
+  console.log(sparkline(history), distinfo(history));
+  t.true(isSuperLinearlyIncreasing(history));
+});

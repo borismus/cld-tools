@@ -17,21 +17,27 @@ export class GraphSimulatorSimple {
   // Key: node name. Value: the target value.
   targets = {};
 
-  constructor(graph, {initialValue = DEFAULT_INITIAL_VALUE, edgeAlpha = DEFAULT_EDGE_ALPHA, targets = {}}) {
+  constructor(graph, {initialValues = {}, edgeAlpha = DEFAULT_EDGE_ALPHA, targets = {}} = {}) {
     this.graph = graph;
-    this.initialValue = initialValue;
-    this.targets = targets;
     this.edgeAlpha = edgeAlpha;
 
     for (const node of graph.adjList.nodes) {
-      this.values[node.name] = this.initialValue;
-      this.history[node.name] = [this.initialValue];
+      let initialValue = initialValues[node.name] || DEFAULT_INITIAL_VALUE;
+      this.values[node.name] = initialValue;
+      this.history[node.name] = [initialValue];
+    }
+
+    for (const nodeName in initialValues) {
+      if (this.values[nodeName] === undefined) {
+        throw new Error(`Initial value for "${nodeName}" provided but node does not exist.`);
+        continue;
+      }
     }
 
     for (const nodeName in targets) {
       // Check that the provided targets correspond to nodes in the graph.
-      if (!this.values[nodeName]) {
-        console.warn(`Target for "${nodeName}" provided but node does not exist.`);
+      if (this.values[nodeName] === undefined) {
+        throw new Error(`Target for "${nodeName}" provided but node does not exist.`);
         continue;
       }
       const target = targets[nodeName];
