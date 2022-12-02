@@ -3,6 +3,7 @@ import {CausalGraph} from './causal-graph.js';
 import {parseCGML, parseCGMLLine} from './cgml.js';
 import {GraphSimulatorSimple} from './graph-simulator.js';
 import {adjacencyListToNumericGraph, tarjanSCC} from './tarjan.js';
+import {seriesToSparklineString as sparkline} from './sparkline.js';
 
 
 test('Parse single CGML line', t => {
@@ -476,7 +477,7 @@ test(`Balancing loop simulation behaves right for the first few iters.`, t => {
   t.is(sim.values['B'], 1.27);
 });
 
-test(`Balancing loop simulation goes to zero asymptote.`, t => {
+test(`Balancing loop simulation without targets hovers around zero asymptote.`, t => {
   const g = new CausalGraph(`
   A -> B
   B o-> A
@@ -486,9 +487,15 @@ test(`Balancing loop simulation goes to zero asymptote.`, t => {
   for (let i = 0; i < 100; i++) {
     sim.run();
   }
-  const history = sim.history['A'];
-  // console.log(history.join(' '));
-  t.true(true);
+  const array = sim.history['A'];
+  const average = arrayMean(array);
+  // console.log(array.join(' '));
+  // console.log(average);
+  const delta = Math.abs(average);
+  const EPS = 0.5;
+  // console.log(sparkline(array));
+  // console.log(array.join(' '));
+  t.true(delta < EPS);
 });
 
 test(`Behavior of a reinforcing and balancing loop.`, t => {
@@ -502,7 +509,26 @@ test(`Behavior of a reinforcing and balancing loop.`, t => {
   for (let i = 0; i < 100; i++) {
     sim.run();
   }
-  const history = sim.history['PA']
-  console.log(history.join(' '));
-  // t.true(true);
+  const history = sim.history['PA'];
+  console.log(sparkline(history));
+  t.true(true);
 });
+
+test(`Sparkline works reasonably`, t => {
+  t.is(sparkline([1,2,3,4,5,6,7,8]), '▁▂▃▄▅▆▇█');
+  t.is(sparkline([-5,-4,-3,-2,-1,0,1,2]), '▁▂▃▄▅▆▇█');
+  t.is(sparkline([1, 5, 10]), '▁▄█');
+  t.is(sparkline([1, 100]), '▁█');
+  t.is(sparkline([100, 99]), '█▁');
+  t.is(sparkline([1,2,3,4,5,6,7,8,7,6,5,4,3,2,1]), '▁▂▃▄▅▆▇█▇▆▅▄▃▂▁');
+  t.is(sparkline([1.5, 0.5, 3.5, 2.5, 5.5, 4.5, 7.5, 6.5]), '▂▁▄▃▆▅█▇')
+  // t.is(sparkline([0, 999, 4000, 4999, 7000, 7999]), '▁▁▅▅██');
+});
+
+test(`Balancing loop with target behaves right`, t => {
+
+});
+
+function arrayMean(array) {
+  return array.reduce((a, b) => a + b) / array.length;
+}

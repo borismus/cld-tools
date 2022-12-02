@@ -1,6 +1,11 @@
 const DEFAULT_EDGE_ALPHA = 0.1;
 const DEFAULT_INITIAL_VALUE = 1;
 
+class BalancingLoopTarget {
+  nodeName = '';
+  target = 0;
+}
+
 /**
  * Simulates a causal graph with initial values specified on each node.
  */
@@ -9,15 +14,29 @@ export class GraphSimulatorSimple {
   history = {};
   // Key: node name. Value: current value.
   values = {};
+  // Key: node name. Value: the target value.
+  targets = {};
 
-  constructor(graph, {initialValue = DEFAULT_INITIAL_VALUE, edgeAlpha = DEFAULT_EDGE_ALPHA}) {
+  constructor(graph, {initialValue = DEFAULT_INITIAL_VALUE, edgeAlpha = DEFAULT_EDGE_ALPHA, targets = {}}) {
     this.graph = graph;
     this.initialValue = initialValue;
+    this.targets = targets;
     this.edgeAlpha = edgeAlpha;
 
     for (const node of graph.adjList.nodes) {
       this.values[node.name] = this.initialValue;
       this.history[node.name] = [this.initialValue];
+    }
+
+    for (const nodeName in targets) {
+      // Check that the provided targets correspond to nodes in the graph.
+      if (!this.values[nodeName]) {
+        console.warn(`Target for "${nodeName}" provided but node does not exist.`);
+        continue;
+      }
+      const target = targets[nodeName];
+      this.targets[nodeName] = target;
+      console.log(`Added ${nodeName} -> ${target} to targets list.`);
     }
   }
 
@@ -34,8 +53,9 @@ export class GraphSimulatorSimple {
       let newValue = newValues[node.name];
       const inboundNodes = this.graph.adjList.findInboundAdjacentNodes(node.name);
       for (const [inboundNode, edge] of inboundNodes) {
+        let target = this.targets[inboundNode.name] || 0;
         const oppositeMul = edge.isOpposite ? -1 : 1;
-        const delta = this.values[inboundNode.name] * this.edgeAlpha * oppositeMul;
+        const delta = (this.values[inboundNode.name] - target) * this.edgeAlpha * oppositeMul;
         // console.log(`${inboundNode.name} -> ${node.name}: delta ${delta}.`);
         // How much does this inbound node contribute to the value of the node.
         newValue += delta;
