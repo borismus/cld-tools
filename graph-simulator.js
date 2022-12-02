@@ -1,3 +1,5 @@
+import {distinfo, sparkline} from './sparkline.js';
+
 const DEFAULT_EDGE_ALPHA = 0.1;
 const DEFAULT_INITIAL_VALUE = 1;
 
@@ -106,5 +108,30 @@ export class GraphSimulatorSimple {
     const out = normalized.map(norm => (norm * maxValue) + minValue);
 
     return out;
+  }
+
+  textSummary({historyChars = 40, labelChars=20, showDistInfo=false} = {}) {
+    // Produce a table containing information about each node in the graph.
+    let out = '';
+    for (const node of this.graph.adjList.nodes) {
+      const label = padOrCut(node.label, labelChars);
+      const series = this.history[node.name].slice(-historyChars);
+      const history = sparkline(series);
+      let line = `| ${label} | ${history} |`;
+      if (showDistInfo) {
+        const {min, max, mean} = distinfo(series);
+        line += ` [${min}, ${max}], µ=${mean} |`;
+      }
+      out += `${line}\n`;
+    }
+    return out;
+  }
+}
+
+function padOrCut(str, length=20) {
+  if (str.length > length) {
+    return str.substr(0, length);
+  } else {
+    return str.padEnd(length);
   }
 }

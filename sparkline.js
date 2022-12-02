@@ -47,3 +47,16 @@ export function isSuperLinearlyIncreasing(array) {
   }
   return true;
 }
+
+export function isStrictlyDecreasing(array) {
+  let lastDelta = -Infinity;
+  for (let i = 0; i < array.length - 1; i++) {
+    const curr = array[i];
+    const next = array[i + 1];
+    const delta = next - curr;
+    if (delta > 0) {
+      return false;
+    }
+  }
+  return true;
+}

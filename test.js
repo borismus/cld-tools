@@ -3,7 +3,7 @@ import {CausalGraph} from './causal-graph.js';
 import {parseCGML, parseCGMLLine} from './cgml.js';
 import {GraphSimulatorSimple} from './graph-simulator.js';
 import {adjacencyListToNumericGraph, tarjanSCC} from './tarjan.js';
-import {arrayMean, distinfo, isSuperLinearlyIncreasing, sparkline} from './sparkline.js';
+import {arrayMean, distinfo, isStrictlyDecreasing, isSuperLinearlyIncreasing, sparkline} from './sparkline.js';
 
 
 test('Parse single CGML line', t => {
@@ -510,12 +510,17 @@ test(`Sparkline works reasonably`, t => {
   // t.is(sparkline([0, 999, 4000, 4999, 7000, 7999]), '▁▁▅▅██');
 });
 
-test(`isSuperLinearlyIncreasing`, t => {
+test(`isSuperLinearlyIncreasing works`, t => {
   t.true(isSuperLinearlyIncreasing([1,2,4,8]));
   t.false(isSuperLinearlyIncreasing([1,2,4,8,9]));
   t.false(isSuperLinearlyIncreasing([1,2,3,4,5,6]));
   t.false(isSuperLinearlyIncreasing([1,2,3,4,5,10]));
   t.false(isSuperLinearlyIncreasing([5,4,2,-1,-100]));
+});
+
+test(`isStrictlyDecreasing works`, t => {
+  t.true(isStrictlyDecreasing([5,4,3,2]));
+  t.false(isStrictlyDecreasing([1,2,4,8,9]));
 });
 
 test(`Balancing loop with target behaves right`, t => {
@@ -550,11 +555,13 @@ test(`Behavior of a reinforcing and balancing loop works (adopter / saturation).
   AR -> Actual Adopters (A)
   A -> AR
   `);
-  const sim = new GraphSimulatorSimple(g, {initialValues: {A: 0, PA: 10000}});
+  const sim = new GraphSimulatorSimple(g, {initialValues: {AR: 0.1, PA: 10000}});
   for (let i = 0; i < 100; i++) {
     sim.run();
   }
-  const history = sim.history['A'];
-  console.log(sparkline(history), distinfo(history));
-  t.true(isSuperLinearlyIncreasing(history));
+
+  console.log(sim.textSummary());
+
+  t.true(isSuperLinearlyIncreasing(sim.history['A']));
+  t.true(isStrictlyDecreasing(sim.history['PA']));
 });
