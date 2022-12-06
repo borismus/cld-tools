@@ -30,6 +30,14 @@ export function parseCGML(cgml) {
  * @returns {Graph}
  */
 export function parseCGMLLine(line) {
+  // Ignore comments which start with //.
+  if (line.trim().startsWith('//')) {
+    return new AdjacencyList();
+  }
+  // Ignore empty lines.
+  if (line.trim() === '') {
+    return new AdjacencyList();
+  }
   // First, split along the arrow. If there's no arrow, we're in bad shape.
   const split = line.split('->');
   if (split.length !== 2) {

@@ -17,6 +17,18 @@ test('Parse single CGML line', t => {
   t.is(result.findNodeByName('EO').adjacentEdges.length, 0);
 });
 
+test('Allow empty CGML lines', t => {
+  const result = parseCGMLLine('');
+  t.is(result.nodes.length, 0);
+})
+
+test('Allow CGML lines with comments starting with //', t => {
+  const result = parseCGMLLine('// This is a comment and it will be ignored.');
+  t.is(result.nodes.length, 0);
+  const leadingResult = parseCGMLLine('   // Even comments with leading whitespace.');
+  t.is(leadingResult.nodes.length, 0);
+})
+
 test('Parse two-line CGML', t => {
   const result = parseCGML(`
   Parent Funding (PF) -> Educational Outcomes (EO)
@@ -564,4 +576,63 @@ test(`Behavior of a reinforcing and balancing loop works (adopter / saturation).
 
   t.true(isSuperLinearlyIncreasing(sim.history['A']));
   t.true(isStrictlyDecreasing(sim.history['PA']));
+});
+
+test(`SPS causal graphs work as expected.`, t => {
+  const graph = new CausalGraph(`
+Parental expectations (PE) o-> Satisfaction Gap (SG)
+Academic <br/>Performance (AR) -> SG
+SG -> Parental Funding (PF)
+AR -> School Equality Gap (SI)
+SI o-> PF
+School Board <br/>Equity Desires (SB) o-> SI
+SG o-> School enrollment(SE)
+Parent funding (PF) -> AR
+SE -> PF
+  `)
+  // There are three underlying loops:
+  //
+  // R1. Concerned parents can join as a collective (PTA) and fund new programs
+  //     in the school. The more money they contribute, the better the school
+  //     program becomes.
+  // B2. The school board strives for more equal outcomes for schools in their
+  //     district. This means focusing funding on needy schools, and
+  //     also restricting funding on parental contributions in affluent areas.
+  // B3. Parents have expectations for their children's performance. If
+  //     expectations are not met, parents withdraw children from school, which
+  //     reduces the amount of funding the school gets.
+  const loops = graph.analyzeLoops();
+  t.is(loops.length, 3);
+  // t.is(loops[0].type, 'REINFORCING');
+
+  // Hypothesis: if the school board has too strict a limit on contribution
+  // limits for parents, academic outcomes will suffer, parents will withdraw
+  // their children from the school and overall school funding will decrease.
+  // Params:
+  // - B2 goal: high (school board aims for equality)
+  // - B3 goal: high (parents are ambitious)
+  // Expectations:
+  // - Academic Results plummet
+  // - School Enrollment decreases
+  // - Parent Funding decreases
+
+  // Hypothesis: if parents have relatively low expectations for their kids,
+  // then their children can remain in school and their expectations can be met.
+  // Params:
+  // - B2 goal: high (school board aims for equality)
+  // - B3 goal: low (parents are not ambitious)
+  // Expectations:
+  // - Academic Results is low
+  // - School Enrollment is stable
+  // - Parent Funding is low
+
+  // Hypothesis: if the school board does not care about academic equality,
+  // even the most ambitious parents needs can be met in public schools.
+  // Params:
+  // - B2 goal: low (school board is fine with inequality)
+  // - B3 goal: high (parents are ambitious)
+  // Expectations:
+  // - Academic Results is relatively high
+  // - School Enrolment is stable
+  // - Parent funding is high.
 });
