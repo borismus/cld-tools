@@ -10,7 +10,7 @@ export class CausalGraphElement extends LitElement {
     return {
       name: {type: String},
       readonly: {type: Boolean},
-      cgml: {type: String},
+      cgml: {type: String, reflect: true},
     }
   }
 
@@ -19,6 +19,21 @@ export class CausalGraphElement extends LitElement {
     this.readonly = false;
     this.name = 'Somebody';
     this.cgml = '';
+  }
+
+  updated(changedProps) {
+    console.log('updated', changedProps);
+    if (changedProps.has('cgml')) {
+      this.renderGraph(this.cgml);
+
+      let myEvent = new CustomEvent('cgml-change', {
+        detail: {cgml: this.cgml, message: 'my-event happened.'},
+        bubbles: true,
+        composed: true
+      });
+      this.dispatchEvent(myEvent);
+
+    }
   }
 
   handleTextareaBlur(e) {
@@ -30,13 +45,11 @@ export class CausalGraphElement extends LitElement {
     const cgml = textarea.value;
     this.cgml = cgml;
 
-    let myEvent = new CustomEvent('cgml-change', {
-      detail: {cgml, message: 'my-event happened.'},
-      bubbles: true,
-      composed: true
-    });
-    this.dispatchEvent(myEvent);
+    // Triggered when you change this.cgml.
+    // this.renderGraph(cgml);
+  }
 
+  renderGraph(cgml) {
     try {
       const graph = new CausalGraph(cgml);
       graph.mermaidOrientation = 'LR';
@@ -50,14 +63,12 @@ export class CausalGraphElement extends LitElement {
     } catch (e) {
       console.log('Bad graph.', e);
     }
-
-
   }
 
   render() {
     const textarea = !this.readonly ?
       html`<textarea cols=80 rows=10 placeholder="Your CGML graph goes in here." @input=${this.handleTextareaInput}
-  @blur=${this.handleTextareaBlur}></textarea>` : html``;
+  @blur=${this.handleTextareaBlur}>${this.cgml}</textarea>` : html``;
     return html`
     <div style="display: flex; flex-direction: row">
       ${textarea}
