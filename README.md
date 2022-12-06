@@ -1,18 +1,15 @@
 # SPS Graph: two balancing loops
 
-```
-Parental expectations (PE) o-> Satisfaction Gap(SG)
-Academic <br/>Performance (AR) -> SG
-SG o-> School enrollment(SE)
-```
+N=100
+| Satisfaction Gap     | ▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▂▂▃▄▅▆█ |
+| Academic <br/>Perfor | ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▂▂▂▃▄▄▅▆▇█ |
+| Parental Funding     | ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▂▂▂▃▃▄▅▅▆▇▇███ |
+| School Equality Gap  | ▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▂▂▃▄▅▆█ |
+| School enrollment    | ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▅▅▅▅▅▅▆▆▆▇▇▇█████▇▆▄▁ |
 
-```
-Parent funding (PF) -> AR
-SE -> PF
-```
-
-```
-AR -> School Equality Gap (SI)
-SI o-> PF
-School Board <br/>Equity Desires (SB) o-> SI
-```
+N=200
+| Satisfaction Gap     | ▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▁▁▁▁▁▁▁▁▂▃▅█ |
+| Academic <br/>Perfor | ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▂▂▃▅▆█ |
+| Parental Funding     | ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▂▃▄▅▆██▆ |
+| School Equality Gap  | ▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▁▁▁▁▁▁▁▁▂▃▅█ |
+| School enrollment    | ▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▇▇███▇▅▁ |

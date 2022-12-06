@@ -44,7 +44,7 @@ export class GraphSimulatorSimple {
       }
       const target = targets[nodeName];
       this.targets[nodeName] = target;
-      console.log(`Added ${nodeName} -> ${target} to targets list.`);
+      // console.log(`Added ${nodeName} -> ${target} to targets list.`);
     }
   }
 
@@ -110,12 +110,26 @@ export class GraphSimulatorSimple {
     return out;
   }
 
-  textSummary({historyChars = 40, labelChars=20, showDistInfo=false} = {}) {
-    // Produce a table containing information about each node in the graph.
+  /**
+   * Produces a text table containing information about each node in the graph
+  */
+  textSummary({historyChars = 40, labelChars = 20, showDistInfo = false, completeHistory = false} = {}) {
     let out = '';
     for (const node of this.graph.adjList.nodes) {
       const label = padOrCut(node.label, labelChars);
-      const series = this.history[node.name].slice(-historyChars);
+      let series = this.history[node.name];
+      // Don't show static values.
+      if (isStatic(series)) {
+        continue;
+      }
+      if (completeHistory) {
+        // Resample the whole history to fit within the number of characters
+        // available.
+        series = downsample(series, historyChars)
+      } else {
+        // Show just the last history.
+        series = series.slice(-historyChars);
+      }
       const history = sparkline(series);
       let line = `| ${label} | ${history} |`;
       if (showDistInfo) {
@@ -128,10 +142,58 @@ export class GraphSimulatorSimple {
   }
 }
 
-function padOrCut(str, length=20) {
+function padOrCut(str, length = 20) {
   if (str.length > length) {
     return str.substr(0, length);
   } else {
     return str.padEnd(length);
   }
+}
+
+export function downsample(arr, binCount) {
+  if (binCount > arr.length) {
+    throw new Error(`Can't downsample: array length ${arr.length} exceeds binCount=${binCount}.`);
+  }
+  // Ideally binCount << arr.length.
+  if (binCount * 2 > arr.length) {
+    console.warn(`This will work better if you use fewer bins.`);
+  }
+  // Figure out a good partition for the array so that we end up with roughly
+  // equal bin sizes (in terms of indices).
+  const sampling = arr.length / binCount;
+  // console.log('sampling', sampling);
+
+  // Once we have these partitions, calculate the mean for each sub-array.
+  let resampled = [];
+  for (let i = 0; i < binCount; i++) {
+    const startInd = Math.floor(i * sampling);
+    const endInd = Math.floor((i+1) * sampling) - 1;
+    // console.log(`meanBetween, ${startInd}, ${endInd}`);
+    resampled.push(meanBetween(arr, startInd, endInd));
+  }
+  return resampled;
+}
+
+export function meanBetween(arr, startInd, endInd) {
+  if (startInd < 0 || endInd < 0 || arr.length <= startInd || arr.length <= endInd) {
+    throw new Error(`startInd=${startInd} or endInd=${endInd} out of range=${arr.length}.`);
+  }
+  if (endInd <= startInd) {
+    throw new Error(`startInd=${startInd} exceeds endInd=${endInd}`);
+  }
+  let sum = 0;
+  for (let i = startInd; i <= endInd; i++) {
+    sum += arr[i];
+  }
+  return sum / (endInd - startInd + 1);
+}
+
+function isStatic(arr) {
+  const firstValue = arr[0];
+  for (const val of arr) {
+    if (val != firstValue) {
+      return false;
+    }
+  }
+  return true;
 }

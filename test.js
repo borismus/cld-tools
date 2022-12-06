@@ -1,7 +1,7 @@
 import test from 'ava';
 import {CausalGraph} from './causal-graph.js';
 import {parseCGML, parseCGMLLine} from './cgml.js';
-import {GraphSimulatorSimple} from './graph-simulator.js';
+import {downsample, GraphSimulatorSimple, meanBetween} from './graph-simulator.js';
 import {adjacencyListToNumericGraph, tarjanSCC} from './tarjan.js';
 import {arrayMean, distinfo, isStrictlyDecreasing, isSuperLinearlyIncreasing, sparkline} from './sparkline.js';
 
@@ -523,16 +523,16 @@ test(`Sparkline works reasonably`, t => {
 });
 
 test(`isSuperLinearlyIncreasing works`, t => {
-  t.true(isSuperLinearlyIncreasing([1,2,4,8]));
-  t.false(isSuperLinearlyIncreasing([1,2,4,8,9]));
-  t.false(isSuperLinearlyIncreasing([1,2,3,4,5,6]));
-  t.false(isSuperLinearlyIncreasing([1,2,3,4,5,10]));
-  t.false(isSuperLinearlyIncreasing([5,4,2,-1,-100]));
+  t.true(isSuperLinearlyIncreasing([1, 2, 4, 8]));
+  t.false(isSuperLinearlyIncreasing([1, 2, 4, 8, 9]));
+  t.false(isSuperLinearlyIncreasing([1, 2, 3, 4, 5, 6]));
+  t.false(isSuperLinearlyIncreasing([1, 2, 3, 4, 5, 10]));
+  t.false(isSuperLinearlyIncreasing([5, 4, 2, -1, -100]));
 });
 
 test(`isStrictlyDecreasing works`, t => {
-  t.true(isStrictlyDecreasing([5,4,3,2]));
-  t.false(isStrictlyDecreasing([1,2,4,8,9]));
+  t.true(isStrictlyDecreasing([5, 4, 3, 2]));
+  t.false(isStrictlyDecreasing([1, 2, 4, 8, 9]));
 });
 
 test(`Balancing loop with target behaves right`, t => {
@@ -572,7 +572,7 @@ test(`Behavior of a reinforcing and balancing loop works (adopter / saturation).
     sim.run();
   }
 
-  console.log(sim.textSummary());
+  // console.log(sim.textSummary());
 
   t.true(isSuperLinearlyIncreasing(sim.history['A']));
   t.true(isStrictlyDecreasing(sim.history['PA']));
@@ -603,7 +603,6 @@ SE -> PF
   //     reduces the amount of funding the school gets.
   const loops = graph.analyzeLoops();
   t.is(loops.length, 3);
-  // t.is(loops[0].type, 'REINFORCING');
 
   // Hypothesis: if the school board has too strict a limit on contribution
   // limits for parents, academic outcomes will suffer, parents will withdraw
@@ -615,6 +614,13 @@ SE -> PF
   // - Academic Results plummet
   // - School Enrollment decreases
   // - Parent Funding decreases
+  const sim = new GraphSimulatorSimple(graph, {targets: {'PE': 100, 'SB': 100}});
+  for (let i = 0; i < 100; i++) {
+    sim.run();
+  }
+  console.log(sim.textSummary({completeHistory: true}));
+
+  // console.log(sim.history['PE']);
 
   // Hypothesis: if parents have relatively low expectations for their kids,
   // then their children can remain in school and their expectations can be met.
@@ -635,4 +641,27 @@ SE -> PF
   // - Academic Results is relatively high
   // - School Enrolment is stable
   // - Parent funding is high.
+});
+
+test(`Downsampling works as expected.`, t => {
+  const result = downsample([1, 2, 3, 4, 5, 6, 7, 8, 9], 3);
+  t.is(result.length, 3);
+  t.deepEqual(result, [2, 5, 8]);
+
+  const r2 = downsample([1, 2, 3, 4, 5, 6, 7], 2);
+  t.is(r2.length, 2);
+  t.deepEqual(r2, [2, 5.5]);
+
+
+  const r3 = downsample([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], 4);
+  t.is(r3.length, 4);
+  t.deepEqual(r3, [1, 4.5, 8, 11.5]);
+});
+
+test(`meanBetween works as expected`, t => {
+  const arr = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  t.is(meanBetween(arr, 0, 2), 2);
+  t.is(meanBetween(arr, 3, 5), 5);
+  t.is(meanBetween(arr, 6, 8), 8);
+  t.is(meanBetween(arr, 1, 4), 3.5);
 });
