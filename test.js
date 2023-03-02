@@ -429,7 +429,7 @@ test(`Graph sim running works reasonably for a few iterations`, t => {
   B -> Satisfaction Gap (C)
   C -> A
   `);
-  const sim = new GraphSimulatorSimple(g, {initialValue: 1, edgeAlpha: 0.1});
+  const sim = new GraphSimulatorSimple(g);
 
   // First iteration.
   sim.run();
@@ -454,7 +454,7 @@ test(`Graph reinforcing loop simulation and expect an exponential`, t => {
   B -> Satisfaction Gap (C)
   C -> A
   `);
-  const sim = new GraphSimulatorSimple(g, {initialValue: 1, edgeAlpha: 0.1});
+  const sim = new GraphSimulatorSimple(g);
 
   for (let i = 0; i < 100; i++) {
     sim.run();
@@ -474,7 +474,7 @@ test(`Balancing loop simulation behaves right for the first few iters.`, t => {
   A -> B
   B o-> A
   `);
-  const sim = new GraphSimulatorSimple(g, {initialValue: 1, edgeAlpha: 0.1});
+  const sim = new GraphSimulatorSimple(g);
 
   sim.run();
   t.is(sim.values['A'], 0.9);
@@ -620,8 +620,6 @@ SE -> PF
   }
   console.log(sim.textSummary({completeHistory: true}));
 
-  // console.log(sim.history['PE']);
-
   // Hypothesis: if parents have relatively low expectations for their kids,
   // then their children can remain in school and their expectations can be met.
   // Params:
@@ -631,6 +629,11 @@ SE -> PF
   // - Academic Results is low
   // - School Enrollment is stable
   // - Parent Funding is low
+  const sim2 = new GraphSimulatorSimple(graph, {targets: {'PE': -100, 'SB': 100}});
+  for (let i = 0; i < 100; i++) {
+    sim2.run();
+  }
+  console.log(sim2.textSummary({completeHistory: true}));
 
   // Hypothesis: if the school board does not care about academic equality,
   // even the most ambitious parents needs can be met in public schools.
