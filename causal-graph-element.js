@@ -1,28 +1,32 @@
 import {html, css, LitElement} from 'https://cdn.skypack.dev/lit';
 import {CausalGraph} from './causal-graph.js';
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9.4.3/+esm';
 
 export class CausalGraphElement extends LitElement {
   static get styles() {
-    return css`p { color: blue }`;
+    return css`
+      p { color: blue; }
+      .mermaid { width: 100%; }
+  `;
   }
 
   static get properties() {
     return {
       name: {type: String},
-      readonly: {type: Boolean},
       cgml: {type: String, reflect: true},
+      noTextarea: {type: Boolean, reflect: true},
     }
   }
 
   constructor() {
     super();
-    this.readonly = false;
     this.name = 'Somebody';
     this.cgml = '';
+    this.noTextarea = false;
   }
 
   updated(changedProps) {
-    console.log('updated', changedProps);
+    // console.log('updated', changedProps);
     if (changedProps.has('cgml')) {
       this.renderGraph(this.cgml);
 
@@ -50,15 +54,19 @@ export class CausalGraphElement extends LitElement {
   }
 
   renderGraph(cgml) {
+    const mermaidEl = this.shadowRoot.querySelector('.mermaid');
     try {
+      if (!cgml) {
+        mermaidEl.innerHTML = '';
+      }
       const graph = new CausalGraph(cgml);
       graph.mermaidOrientation = 'LR';
 
       const mermaidMarkup = graph.toMermaid({labelLoops: true});
-      console.log('Rendering mermaid.js', mermaidMarkup)
+      // console.log('Rendering mermaid.js', mermaidMarkup)
 
       mermaid.mermaidAPI.render('graphDiv', mermaidMarkup, (svgCode) => {
-        this.shadowRoot.querySelector('.mermaid').innerHTML = svgCode;
+        mermaidEl.innerHTML = svgCode;
       });
     } catch (e) {
       console.log('Bad graph.', e);
@@ -66,7 +74,7 @@ export class CausalGraphElement extends LitElement {
   }
 
   render() {
-    const textarea = !this.readonly ?
+    const textarea = !this.noTextarea ?
       html`<textarea cols=80 rows=10 placeholder="Your CGML graph goes in here." @input=${this.handleTextareaInput}
   @blur=${this.handleTextareaBlur}>${this.cgml}</textarea>` : html``;
     return html`
