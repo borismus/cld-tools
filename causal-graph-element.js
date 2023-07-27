@@ -7,6 +7,7 @@ export class CausalGraphElement extends LitElement {
     return css`
       p { color: blue; }
       .mermaid { width: 100%; }
+      .mermaid svg { max-width: none !important; }
   `;
   }
 
