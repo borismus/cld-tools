@@ -60,6 +60,7 @@ export class CausalGraphElement extends LitElement {
     try {
       if (!cgml) {
         mermaidEl.innerHTML = '';
+        return;
       }
       const graph = new CausalGraph(cgml);
       graph.mermaidOrientation = 'LR';
