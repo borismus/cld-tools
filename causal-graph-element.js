@@ -1,6 +1,7 @@
-import {html, css, LitElement} from 'https://cdn.skypack.dev/lit';
-import {CausalGraph} from './causal-graph.js';
+import {html, css, LitElement} from 'https://cdn.jsdelivr.net/npm/lit-element@3.3.3/+esm';
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9.4.3/+esm';
+
+import {CausalGraph} from './causal-graph.js';
 
 export class CausalGraphElement extends LitElement {
   static get styles() {
