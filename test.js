@@ -1,4 +1,3 @@
-import test from 'ava';
 import {CausalGraph} from './causal-graph.js';
 import {parseCGML, parseCGMLLine} from './cgml.js';
 import {downsample, GraphSimulatorSimple, meanBetween} from './graph-simulator.js';
@@ -6,88 +5,88 @@ import {adjacencyListToNumericGraph, tarjanSCC} from './tarjan.js';
 import {arrayMean, distinfo, isStrictlyDecreasing, isSuperLinearlyIncreasing, sparkline} from './sparkline.js';
 
 
-test('Parse single CGML line', t => {
+test('Parse single CGML line', () => {
   const result = parseCGMLLine('Parent Funding (PF) -> Educational Outcomes (EO)');
-  t.is(result.nodes.length, 2);
-  t.not(result.findNodeByName('PF'), null);
-  t.is(result.findNodeByName('Fake'), null);
-  t.is(result.findNodeByName('EO').label, 'Educational Outcomes');
-  t.is(result.findNodeByName('PF').label, 'Parent Funding');
-  t.is(result.findNodeByName('PF').adjacentEdges.length, 1);
-  t.is(result.findNodeByName('EO').adjacentEdges.length, 0);
+  expect(result.nodes.length).toBe(2);
+  expect(result.findNodeByName('PF')).toBeDefined();
+  expect(result.findNodeByName('Fake')).toBeNull();
+  expect(result.findNodeByName('EO').label).toBe('Educational Outcomes');
+  expect(result.findNodeByName('PF').label).toBe('Parent Funding');
+  expect(result.findNodeByName('PF').adjacentEdges.length).toBe(1);
+  expect(result.findNodeByName('EO').adjacentEdges.length).toBe(0);
 });
 
-test('Allow empty CGML lines', t => {
+test('Allow empty CGML lines', () => {
   const result = parseCGMLLine('');
-  t.is(result.nodes.length, 0);
+  expect(result.nodes.length).toBe(0);
 })
 
-test('Allow CGML lines with comments starting with //', t => {
+test('Allow CGML lines with comments starting with //', () => {
   const result = parseCGMLLine('// This is a comment and it will be ignored.');
-  t.is(result.nodes.length, 0);
+  expect(result.nodes.length).toBe(0);
   const leadingResult = parseCGMLLine('   // Even comments with leading whitespace.');
-  t.is(leadingResult.nodes.length, 0);
+  expect(leadingResult.nodes.length).toBe(0);
 })
 
-test('Parse two-line CGML', t => {
+test('Parse two-line CGML', () => {
   const result = parseCGML(`
   Parent Funding (PF) -> Educational Outcomes (EO)
   EO -> Dog
   `);
-  t.is(result.nodes.length, 3);
-  t.not(result.findNodeByName('Dog'), null);
-  t.is(result.findNodeByName('Dog').name, 'Dog');
+  expect(result.nodes.length).toBe(3);
+  expect(result.findNodeByName('Dog')).toBeDefined();
+  expect(result.findNodeByName('Dog').name).toBe('Dog');
 });
 
-test(`Parse CGML labels`, t => {
+test(`Parse CGML labels`, () => {
   const result = parseCGML(`
   Parent Funding (PF) -> Academic Results (AR)
   AR -> Satisfaction Gap (SG)
   `);
-  t.is(result.findNodeByName('PF').label, 'Parent Funding');
-  t.is(result.findNodeByName('AR').label, 'Academic Results');
-  t.is(result.findNodeByName('SG').label, 'Satisfaction Gap');
+  expect(result.findNodeByName('PF').label).toBe('Parent Funding');
+  expect(result.findNodeByName('AR').label).toBe('Academic Results');
+  expect(result.findNodeByName('SG').label).toBe('Satisfaction Gap');
 });
 
-test('Parse CGML with loop', t => {
+test('Parse CGML with loop', () => {
   const result = parseCGML(`
   Parent Funding (A) -> Academic Results (B)
   B -> Satisfaction Gap (C)
   C -> A
   `);
-  t.is(result.nodes.length, 3);
-  t.is(result.findNodeByName('A').label, 'Parent Funding');
-  t.is(result.findNodeByName('A').adjacentEdges.length, 1);
-  t.is(result.findNodeByName('B').adjacentEdges.length, 1);
-  t.is(result.findNodeByName('C').adjacentEdges.length, 1);
+  expect(result.nodes).toHaveLength(3);
+  expect(result.findNodeByName('A').label).toBe('Parent Funding');
+  expect(result.findNodeByName('A').adjacentEdges).toHaveLength(1);
+  expect(result.findNodeByName('B').adjacentEdges).toHaveLength(1);
+  expect(result.findNodeByName('C').adjacentEdges).toHaveLength(1);
 });
 
 
-test(`Parse CGML with negatives`, t => {
+test(`Parse CGML with negatives`, () => {
   const result = parseCGML(`
   Parent Funding (PF) -> Academic Results (AR)
   AR -> Satisfaction Gap (SG)
   SG -> School Enrollment (SE)
   SE o-> PF
   `);
-  t.is(result.nodes.length, 4);
-  t.is(result.findNodeByName('SE').adjacentEdges.length, 1);
-  t.is(result.findNodeByName('PF').adjacentEdges[0].isOpposite, false);
-  t.is(result.findNodeByName('SE').adjacentEdges[0].isOpposite, true);
+  expect(result.nodes.length).toBe(4);
+  expect(result.findNodeByName('SE').adjacentEdges.length).toBe(1);
+  expect(result.findNodeByName('PF').adjacentEdges[0].isOpposite).toBe(false);
+  expect(result.findNodeByName('SE').adjacentEdges[0].isOpposite).toBe(true);
 });
 
 
-test(`Adjacency list to numeric graph`, t => {
+test(`Adjacency list to numeric graph`, () => {
   const result = parseCGML(`
   A -> B
   B -> C
   C -> A
   `);
   const numericGraph = adjacencyListToNumericGraph(result);
-  t.deepEqual(numericGraph, [[1], [2], [0]]);
+  expect(numericGraph).toEqual([[1], [2], [0]]);
 });
 
-test(`More complex adj list to num graph`, t => {
+test(`More complex adj list to num graph`, () => {
   const result = parseCGML(`
   Parent Funding (PF) -> Academic Results (AR)
   AR -> Satisfaction Gap (SG)
@@ -97,10 +96,10 @@ test(`More complex adj list to num graph`, t => {
   SI o-> PF
   `);
   const numericGraph = adjacencyListToNumericGraph(result);
-  t.deepEqual(numericGraph, [[1], [2, 4], [3], [0], [0]]);
+  expect(numericGraph).toEqual([[1], [2, 4], [3], [0], [0]]);
 })
 
-test(`Tarjan's SCC algorithm for single loop`, t => {
+test(`Tarjan's SCC algorithm for single loop`, () => {
   const result = parseCGML(`
   Parent Funding (PF) -> Academic Results (AR)
   AR -> Satisfaction Gap (SG)
@@ -110,12 +109,12 @@ test(`Tarjan's SCC algorithm for single loop`, t => {
 
   const sccs = tarjanSCC(result);
   // Expect that there is one strongly connected component.
-  t.is(sccs.length, 1);
+  expect(sccs.length).toBe(1);
   // Expect that it's a loop of length 4.
-  t.is(sccs[0].length, 4);
+  expect(sccs[0].length).toBe(4);
 });
 
-test(`Tarjan's SCC algorithm for multiple loops`, t => {
+test(`Tarjan's SCC algorithm for multiple loops`, () => {
   const result = parseCGML(`
   Parent Funding (PF) -> Academic Results (AR)
   AR -> Satisfaction Gap (SG)
@@ -127,7 +126,7 @@ test(`Tarjan's SCC algorithm for multiple loops`, t => {
 
   const sccs = tarjanSCC(result);
   // Expect that there is are two strongly connected components.
-  t.is(sccs.length, 2);
+  expect(sccs).toHaveLength(2);
   // Expect that one of the loops has length 4, and the other length 3.
   const [loop1, loop2] = sccs;
   let threeLoop, fourLoop
@@ -138,32 +137,32 @@ test(`Tarjan's SCC algorithm for multiple loops`, t => {
     threeLoop = loop2;
     fourLoop = loop1;
   }
-  t.is(threeLoop.length, 3);
-  t.is(fourLoop.length, 4);
+  expect(threeLoop.length).toBe(3);
+  expect(fourLoop.length).toBe(4);
 
   // Expect the 4-loop to be PF -> AR -> SG -> SE (-> PF)
   const fourNames = fourLoop.map(n => n.name);
-  t.true(fourNames.includes('PF'));
-  t.true(fourNames.includes('AR'));
-  t.true(fourNames.includes('SG'));
-  t.true(fourNames.includes('SE'));
-  t.false(fourNames.includes('SI'));
+  expect(fourNames.includes('PF')).toBeTruthy();
+  expect(fourNames.includes('AR')).toBeTruthy();
+  expect(fourNames.includes('SG')).toBeTruthy();
+  expect(fourNames.includes('SE')).toBeTruthy();
+  expect(fourNames.includes('SI')).toBeFalsy();
 
   // Expect the 3-loop to be PF -> AR -> SI (-> PF)
   const threeNames = threeLoop.map(n => n.name);
-  t.true(threeNames.includes('PF'));
-  t.true(threeNames.includes('AR'));
-  t.true(threeNames.includes('SI'));
-  t.false(threeNames.includes('SE'));
-  t.false(threeNames.includes('SG'));
+  expect(threeNames.includes('PF')).toBeTruthy();
+  expect(threeNames.includes('AR')).toBeTruthy();
+  expect(threeNames.includes('SI')).toBeTruthy();
+  expect(threeNames.includes('SE')).toBeFalsy();
+  expect(threeNames.includes('SG')).toBeFalsy();
 });
 
-test('Parse simple graphs without labels', t => {
+test('Parse simple graphs without labels', () => {
   const graph = new CausalGraph('Parent Funding -> Educational Outcomes');
-  t.is(graph.adjList.nodes.length, 2);
+  expect(graph.adjList.nodes.length).toBe(2);
 });
 
-test(`Find reinforcing loops in simple causal graphs`, t => {
+test(`Find reinforcing loops in simple causal graphs`, () => {
   const graph = new CausalGraph(`
   Parent Funding (PF) -> Academic Results (AR)
   AR -> Satisfaction Gap (SG)
@@ -171,14 +170,14 @@ test(`Find reinforcing loops in simple causal graphs`, t => {
   SE o-> PF
   `);
 
-  t.is(graph.adjList.nodes.length, 4);
+  expect(graph.adjList.nodes.length).toBe(4);
   const loops = graph.analyzeLoops();
-  t.is(loops.length, 1);
-  t.is(loops[0].type, 'BALANCING');
+  expect(loops.length).toBe(1);
+  expect(loops[0].type).toBe('BALANCING');
 })
 
 
-test(`Find balancing loops in simple causal graphs`, t => {
+test(`Find balancing loops in simple causal graphs`, () => {
   const graph = new CausalGraph(`
   Parent Funding (PF) -> Academic Results (AR)
   AR -> Satisfaction Gap (SG)
@@ -186,13 +185,13 @@ test(`Find balancing loops in simple causal graphs`, t => {
   SE -> PF
   `);
 
-  t.is(graph.adjList.nodes.length, 4);
+  expect(graph.adjList.nodes.length).toBe(4);
   const loops = graph.analyzeLoops();
-  t.is(loops.length, 1);
-  t.is(loops[0].type, 'REINFORCING');
+  expect(loops.length).toBe(1);
+  expect(loops[0].type).toBe('REINFORCING');
 });
 
-test(`Convert to mermaid.js graph`, t => {
+test(`Convert to mermaid.js graph`, () => {
   const graph = new CausalGraph(`
   Parent Funding (PF) -> Academic Results (AR)
   AR -> Satisfaction Gap (SG)
@@ -201,12 +200,12 @@ test(`Convert to mermaid.js graph`, t => {
   `);
   const mermaid = graph.toMermaid();
 
-  t.true(mermaid.startsWith('graph TD'));
-  t.not(mermaid.match(/^.*Academic Results.*-->.*Satisfaction Gap.*$/gm), null);
-  t.not(mermaid.match(/^.*School Enrollment.*-.->.*Parent Funding.*$/gm), null);
+  expect(mermaid.startsWith('graph TD')).toBeTruthy();
+  expect(mermaid.match(/^.*Academic Results.*-->.*Satisfaction Gap.*$/gm)).toBeDefined();
+  expect(mermaid.match(/^.*School Enrollment.*-.->.*Parent Funding.*$/gm)).toBeDefined();
 });
 
-test(`Graph concatenation`, t => {
+test(`Graph concatenation`, () => {
   const graph1 = new CausalGraph(`
   Parent Funding (PF) -> Academic Results (AR)
   AR -> Satisfaction Gap (SG)
@@ -220,33 +219,33 @@ test(`Graph concatenation`, t => {
 
   graph1.concat(graph2);
 
-  t.is(graph1.adjList.nodes.length, 5);
-  t.is(graph1.adjList.findNodeByName('PF').adjacentEdges.length, 1);
-  t.is(graph1.adjList.findNodeByName('AR').adjacentEdges.length, 2);
-  t.is(graph1.adjList.findNodeByName('SG').adjacentEdges.length, 1);
-  t.is(graph1.adjList.findNodeByName('SE').adjacentEdges.length, 1);
+  expect(graph1.adjList.nodes.length).toBe(5);
+  expect(graph1.adjList.findNodeByName('PF').adjacentEdges.length).toBe(1);
+  expect(graph1.adjList.findNodeByName('AR').adjacentEdges.length).toBe(2);
+  expect(graph1.adjList.findNodeByName('SG').adjacentEdges.length).toBe(1);
+  expect(graph1.adjList.findNodeByName('SE').adjacentEdges.length).toBe(1);
 
   const arEdgeNames = graph1.adjList.findNodeByName('AR').adjacentEdges.map(e => e.targetName);
-  t.deepEqual(arEdgeNames, ['SG', 'SI']);
+  expect(arEdgeNames).toEqual(['SG', 'SI']);
 
   // Check that we only have one outgoing edge for SI.
   const siEdges = graph1.adjList.findNodeByName('SI').adjacentEdges;
-  t.is(siEdges.length, 1);
+  expect(siEdges.length).toBe(1);
 });
 
-test(`Subgraph IDs are assigned`, t => {
+test(`Subgraph IDs are assigned`, () => {
   const graph1 = new CausalGraph(`
   Hello (A) -> World (B)
   B -> C
   `);
-  t.true(graph1.adjList.id != '');
+  expect(graph1.adjList.id).not.toBe('');
   // Ensure just one subgraph ID here.
   for (const node of graph1.adjList.nodes) {
-    t.is(node.subgraphs.length, 1);
+    expect(node.subgraphs.length).toBe(1);
   }
 });
 
-test(`Subgraph IDs persist through concat`, t => {
+test(`Subgraph IDs persist through concat`, () => {
   const graph1 = new CausalGraph(`
   A -> B
   B -> C
@@ -257,20 +256,20 @@ test(`Subgraph IDs persist through concat`, t => {
   `);
   graph1.concat(graph2);
 
-  t.not(graph1.adjList.id, graph2.adjList.id);
-  t.is(graph1.adjList.findNodeByName('B').subgraphs.length, 1);
-  t.is(graph1.adjList.findNodeByName('D').subgraphs.length, 1);
-  t.is(graph1.adjList.findNodeByName('E').subgraphs.length, 1);
-  t.is(graph1.adjList.findNodeByName('C').subgraphs.length, 1);
-  t.is(graph1.adjList.findNodeByName('A').subgraphs.length, 1);
+  expect(graph1.adjList.id).not.toBe(graph2.adjList.id);
+  expect(graph1.adjList.findNodeByName('B').subgraphs).toHaveLength(1);
+  expect(graph1.adjList.findNodeByName('D').subgraphs).toHaveLength(1);
+  expect(graph1.adjList.findNodeByName('E').subgraphs).toHaveLength(1);
+  expect(graph1.adjList.findNodeByName('C').subgraphs).toHaveLength(1);
+  expect(graph1.adjList.findNodeByName('A').subgraphs).toHaveLength(1);
 
-  t.deepEqual(graph1.adjList.findNodeByName('A').subgraphs, [graph1.adjList.id]);
-  t.deepEqual(graph1.adjList.findNodeByName('C').subgraphs, [graph1.adjList.id]);
-  t.deepEqual(graph1.adjList.findNodeByName('B').subgraphs, [graph1.adjList.id]);
-  t.deepEqual(graph1.adjList.findNodeByName('E').subgraphs, [graph2.adjList.id]);
+  expect(graph1.adjList.findNodeByName('A').subgraphs).toEqual([graph1.adjList.id]);
+  expect(graph1.adjList.findNodeByName('C').subgraphs).toEqual([graph1.adjList.id]);
+  expect(graph1.adjList.findNodeByName('B').subgraphs).toEqual([graph1.adjList.id]);
+  expect(graph1.adjList.findNodeByName('E').subgraphs).toEqual([graph2.adjList.id]);
 });
 
-test(`Node membership remains correct through subgraphs`, t => {
+test(`Node membership remains correct through subgraphs`, () => {
   const graph1 = new CausalGraph(`
   A -> B
   B -> C
@@ -284,11 +283,11 @@ test(`Node membership remains correct through subgraphs`, t => {
 
   // Even though there's a link from A -> D and B -> E, expect D and E to be
   // part of graph2.
-  t.deepEqual(graph1.adjList.findNodeByName('D').subgraphs, [graph2.adjList.id]);
-  t.deepEqual(graph1.adjList.findNodeByName('E').subgraphs, [graph2.adjList.id]);
+  expect(graph1.adjList.findNodeByName('D').subgraphs).toEqual([graph2.adjList.id]);
+  expect(graph1.adjList.findNodeByName('E').subgraphs).toEqual([graph2.adjList.id]);
 });
 
-test(`Partitions work as expected.`, t => {
+test(`Partitions work as expected.`, () => {
   const graph1 = new CausalGraph(`
   A -> B
   B -> C
@@ -302,10 +301,10 @@ test(`Partitions work as expected.`, t => {
 
   const partition = graph1.adjList.partitionSubgraphs();
   const partitionLengths = partition.map(p => p.length);
-  t.deepEqual(partitionLengths, [3, 2]);
+  expect(partitionLengths).toEqual([3, 2]);
 });
 
-test(`More complex partitions work as expected.`, t => {
+test(`More complex partitions work as expected.`, () => {
   const graph1 = new CausalGraph(`
   Parent Funding (PF) -> Academic Results (AR)
   AR -> Satisfaction Gap (SG)
@@ -320,10 +319,10 @@ test(`More complex partitions work as expected.`, t => {
 
   const partition = graph1.adjList.partitionSubgraphs();
   const partitionLengths = partition.map(p => p.length);
-  t.deepEqual(partitionLengths, [4, 1]);
+  expect(partitionLengths).toEqual([4, 1]);
 });
 
-test(`Subgraphs are rendered in mermaid diagrams`, t => {
+test(`Subgraphs are rendered in mermaid diagrams`, () => {
   const graph1 = new CausalGraph(`
   A -> B
   B -> C
@@ -339,11 +338,11 @@ test(`Subgraphs are rendered in mermaid diagrams`, t => {
   const mermaid = graph1.toMermaid();
 
   const lines = mermaid.split('\n');
-  t.true(lines.includes('subgraph Graph 1'));
-  t.true(lines.includes('subgraph Graph 2'));
+  expect(lines.includes('subgraph Graph 1')).toBeTruthy();
+  expect(lines.includes('subgraph Graph 2')).toBeTruthy();
 });
 
-test(`Cycles are rendered in mermaid diagrams`, t => {
+test(`Cycles are rendered in mermaid diagrams`, () => {
   // Verify that the edges that belong to a cycle are labeled with [RB][0-9]+,
   // for example R1 for the first reinforcing loop, or B3 for the third
   // balancing loop.
@@ -360,12 +359,12 @@ test(`Cycles are rendered in mermaid diagrams`, t => {
   graph1.concat(graph2);
 
   const mermaid = graph1.toMermaid({labelLoops: true});
-  t.not(mermaid.match(/^.*Academic Results.*-.->.*|B2|.*School Inequality.*$/gm), null);
-  t.not(mermaid.match(/^.*School Inequality.*-.->.*|B2|.*Parent Funding.*$/gm), null);
+  expect(mermaid.match(/^.*Academic Results.*-.->.*|B2|.*School Inequality.*$/gm)).toBeDefined();
+  expect(mermaid.match(/^.*School Inequality.*-.->.*|B2|.*Parent Funding.*$/gm)).toBeDefined();
 
 });
 
-test(`Reinforcing and balancing loops are labeled in complex mermaid diagrams`, t => {
+test(`Reinforcing and balancing loops are labeled in complex mermaid diagrams`, () => {
   const g1 = new CausalGraph(`
   A -> B
   B -> C
@@ -382,11 +381,11 @@ test(`Reinforcing and balancing loops are labeled in complex mermaid diagrams`, 
   g1.concat(g2);
   const mermaid = g1.toMermaid({labelLoops: true});
 
-  t.not(mermaid.match(/^.*F.*-->.*|R5|.*B.*$/gm), null);
-  t.not(mermaid.match(/^.*C.*-->.*|R5|.*F.*$/gm), null);
+  expect(mermaid.match(/^.*F.*-->.*|R5|.*B.*$/gm)).toBeDefined();
+  expect(mermaid.match(/^.*C.*-->.*|R5|.*F.*$/gm)).toBeDefined();
 });
 
-test(`Simple graph simulation initializes to correct init values.`, t => {
+test(`Simple graph simulation initializes to correct init values.`, () => {
   const g = new CausalGraph(`
   Parent Funding (A) -> Academic Results (B)
   B -> Satisfaction Gap (C)
@@ -394,36 +393,36 @@ test(`Simple graph simulation initializes to correct init values.`, t => {
   `);
 
   const sim = new GraphSimulatorSimple(g, {initialValues: {A: 3}, edgeAlpha: 0.1});
-  t.is(sim.values['A'], 3);
-  t.is(sim.values['B'], 1);
-  t.is(sim.values['C'], 1);
-  t.is(sim.edgeAlpha, 0.1);
+  expect(sim.values['A']).toBe(3);
+  expect(sim.values['B']).toBe(1);
+  expect(sim.values['C']).toBe(1);
+  expect(sim.edgeAlpha).toBe(0.1);
 });
 
-test(`Adjacency list inbound nodes calculations work for simple graph.`, t => {
+test(`Adjacency list inbound nodes calculations work for simple graph.`, () => {
   const al = new parseCGML(`
   A -> B
   B -> C
   `);
-  t.throws(() => al.findInboundAdjacentNodes('X'));
-  t.is(al.findInboundAdjacentNodes('A').length, 0);
-  t.is(al.findInboundAdjacentNodes('B').length, 1);
-  t.is(al.findInboundAdjacentNodes('C').length, 1);
-})
+  expect(() => al.findInboundAdjacentNodes('X')).toThrow();
+  expect(al.findInboundAdjacentNodes('A')).toHaveLength(0);
+  expect(al.findInboundAdjacentNodes('B')).toHaveLength(1);
+  expect(al.findInboundAdjacentNodes('C')).toHaveLength(1);
+});
 
-test(`Adjacency list inbound nodes calculations work for more complex graph.`, t => {
+test(`Adjacency list inbound nodes calculations work for more complex graph.`, () => {
   const al = new parseCGML(`
   A -> D
   B -> D
   C -> D
   `);
-  t.is(al.findInboundAdjacentNodes('D').length, 3);
-  t.is(al.findInboundAdjacentNodes('A').length, 0);
-  t.is(al.findInboundAdjacentNodes('B').length, 0);
-  t.is(al.findInboundAdjacentNodes('C').length, 0);
+  expect(al.findInboundAdjacentNodes('D')).toHaveLength(3);
+  expect(al.findInboundAdjacentNodes('A')).toHaveLength(0);
+  expect(al.findInboundAdjacentNodes('B')).toHaveLength(0);
+  expect(al.findInboundAdjacentNodes('C')).toHaveLength(0);
 })
 
-test(`Graph sim running works reasonably for a few iterations`, t => {
+test(`Graph sim running works reasonably for a few iterations`, () => {
   const g = new CausalGraph(`
   Parent Funding (A) -> Academic Results (B)
   B -> Satisfaction Gap (C)
@@ -433,22 +432,22 @@ test(`Graph sim running works reasonably for a few iterations`, t => {
 
   // First iteration.
   sim.run();
-  t.is(sim.values['A'], 1.1);
-  t.is(sim.values['B'], 1.1);
-  t.is(sim.values['C'], 1.1);
+  expect(sim.values['A']).toBe(1.1);
+  expect(sim.values['B']).toBe(1.1);
+  expect(sim.values['C']).toBe(1.1);
 
   sim.run();
-  t.is(sim.values['A'], 1.21);
-  t.is(sim.values['B'], 1.21);
-  t.is(sim.values['C'], 1.21);
+  expect(sim.values['A']).toBe(1.21);
+  expect(sim.values['B']).toBe(1.21);
+  expect(sim.values['C']).toBe(1.21);
 
   sim.run();
-  t.is(sim.values['A'], 1.33);
-  t.is(sim.values['B'], 1.33);
-  t.is(sim.values['C'], 1.33);
+  expect(sim.values['A']).toBe(1.33);
+  expect(sim.values['B']).toBe(1.33);
+  expect(sim.values['C']).toBe(1.33);
 });
 
-test(`Graph reinforcing loop simulation and expect an exponential`, t => {
+test(`Graph reinforcing loop simulation and expect an exponential`, () => {
   const g = new CausalGraph(`
   Parent Funding (A) -> Academic Results (B)
   B -> Satisfaction Gap (C)
@@ -460,16 +459,16 @@ test(`Graph reinforcing loop simulation and expect an exponential`, t => {
     sim.run();
   }
   // Expect the initial value plus one new value for each run.
-  t.is(sim.history['A'].length, 101);
+  expect(sim.history['A']).toHaveLength(101);
 
   const history = sim.getNormalizedHistory('A', 10);
   // Expect normalized history to be the right length.
-  t.is(history.length, 10);
+  expect(history).toHaveLength(10);
 
   // console.log(history.join(' '));
 });
 
-test(`Balancing loop simulation behaves right for the first few iters.`, t => {
+test(`Balancing loop simulation behaves right for the first few iters.`, () => {
   const g = new CausalGraph(`
   A -> B
   B o-> A
@@ -477,19 +476,19 @@ test(`Balancing loop simulation behaves right for the first few iters.`, t => {
   const sim = new GraphSimulatorSimple(g);
 
   sim.run();
-  t.is(sim.values['A'], 0.9);
-  t.is(sim.values['B'], 1.1);
+  expect(sim.values['A']).toBe(0.9);
+  expect(sim.values['B']).toBe(1.1);
 
   sim.run();
-  t.is(sim.values['A'], 0.79);
-  t.is(sim.values['B'], 1.19);
+  expect(sim.values['A']).toBe(0.79);
+  expect(sim.values['B']).toBe(1.19);
 
   sim.run();
-  t.is(sim.values['A'], 0.67);
-  t.is(sim.values['B'], 1.27);
+  expect(sim.values['A']).toBe(0.67);
+  expect(sim.values['B']).toBe(1.27);
 });
 
-test(`Balancing loop simulation without targets hovers around zero asymptote.`, t => {
+test(`Balancing loop simulation without targets hovers around zero asymptote.`, () => {
   const g = new CausalGraph(`
   A -> B
   B o-> A
@@ -507,35 +506,35 @@ test(`Balancing loop simulation without targets hovers around zero asymptote.`, 
   const EPS = 0.5;
   // console.log(sparkline(array));
   // console.log(array.join(' '));
-  t.true(delta < EPS);
+  expect(delta < EPS).toBeTruthy();
 });
 
-test(`Sparkline works reasonably`, t => {
-  t.is(sparkline([1, 2, 3, 4, 5, 6, 7, 8]), '▁▂▃▄▅▆▇█');
-  t.is(sparkline([-5, -4, -3, -2, -1, 0, 1, 2]), '▁▂▃▄▅▆▇█');
-  t.is(sparkline([1, 5, 10]), '▁▄█');
-  t.is(sparkline([1, 100]), '▁█');
-  t.is(sparkline([100, 99]), '█▁');
-  t.is(sparkline([1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1]), '▁▂▃▄▅▆▇█▇▆▅▄▃▂▁');
-  t.is(sparkline([1.5, 0.5, 3.5, 2.5, 5.5, 4.5, 7.5, 6.5]), '▂▁▄▃▆▅█▇')
+test(`Sparkline works reasonably`, () => {
+  expect(sparkline([1, 2, 3, 4, 5, 6, 7, 8])).toBe('▁▂▃▄▅▆▇█');
+  expect(sparkline([-5, -4, -3, -2, -1, 0, 1, 2])).toBe('▁▂▃▄▅▆▇█');
+  expect(sparkline([1, 5, 10])).toBe('▁▄█');
+  expect(sparkline([1, 100])).toBe('▁█');
+  expect(sparkline([100, 99])).toBe('█▁');
+  expect(sparkline([1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1])).toBe('▁▂▃▄▅▆▇█▇▆▅▄▃▂▁');
+  expect(sparkline([1.5, 0.5, 3.5, 2.5, 5.5, 4.5, 7.5, 6.5])).toBe('▂▁▄▃▆▅█▇')
   // TODO: Figure out the numeric problem causing this case to fail.
-  // t.is(sparkline([0, 999, 4000, 4999, 7000, 7999]), '▁▁▅▅██');
+  // expect(sparkline([0, 999, 4000, 4999, 7000, 7999]), '▁▁▅▅██');
 });
 
-test(`isSuperLinearlyIncreasing works`, t => {
-  t.true(isSuperLinearlyIncreasing([1, 2, 4, 8]));
-  t.false(isSuperLinearlyIncreasing([1, 2, 4, 8, 9]));
-  t.false(isSuperLinearlyIncreasing([1, 2, 3, 4, 5, 6]));
-  t.false(isSuperLinearlyIncreasing([1, 2, 3, 4, 5, 10]));
-  t.false(isSuperLinearlyIncreasing([5, 4, 2, -1, -100]));
+test(`isSuperLinearlyIncreasing works`, () => {
+  expect(isSuperLinearlyIncreasing([1, 2, 4, 8])).toBeTruthy();
+  expect(isSuperLinearlyIncreasing([1, 2, 4, 8, 9])).toBeFalsy();
+  expect(isSuperLinearlyIncreasing([1, 2, 3, 4, 5, 6])).toBeFalsy();
+  expect(isSuperLinearlyIncreasing([1, 2, 3, 4, 5, 10])).toBeFalsy();
+  expect(isSuperLinearlyIncreasing([5, 4, 2, -1, -100])).toBeFalsy();
 });
 
-test(`isStrictlyDecreasing works`, t => {
-  t.true(isStrictlyDecreasing([5, 4, 3, 2]));
-  t.false(isStrictlyDecreasing([1, 2, 4, 8, 9]));
+test(`isStrictlyDecreasing works`, () => {
+  expect(isStrictlyDecreasing([5, 4, 3, 2])).toBeTruthy();
+  expect(isStrictlyDecreasing([1, 2, 4, 8, 9])).toBeFalsy();
 });
 
-test(`Balancing loop with target behaves right`, t => {
+test(`Balancing loop with target behaves right`, () => {
   const g = new CausalGraph(`
   A -> B
   B o-> A
@@ -547,20 +546,21 @@ test(`Balancing loop with target behaves right`, t => {
 
   const history = sim.history['B'];
   // console.log(sparkline(history), Math.min(...history), Math.max(...history));
-  t.true(true);
+  // Probably remove this no-op.
+  expect(true).toBeTruthy();
 });
 
-test(`Balancing loop with invalid target throws error`, t => {
+test(`Balancing loop with invalid target throws error`, () => {
   const g = new CausalGraph(`
   A -> B
   B o-> A
   `);
-  t.throws(() => {
+  expect(() => {
     const sim = new GraphSimulatorSimple(g, {initialValue: 1, edgeAlpha: 0.1, targets: {'X': 10}});
-  });
+  }).toThrow();
 })
 
-test(`Behavior of a reinforcing and balancing loop works (adopter / saturation).`, t => {
+test(`Behavior of a reinforcing and balancing loop works (adopter / saturation).`, () => {
   const g = new CausalGraph(`
   Potential Adopters (PA) -> Adoption Rate (AR)
   AR o-> PA
@@ -574,11 +574,11 @@ test(`Behavior of a reinforcing and balancing loop works (adopter / saturation).
 
   // console.log(sim.textSummary());
 
-  t.true(isSuperLinearlyIncreasing(sim.history['A']));
-  t.true(isStrictlyDecreasing(sim.history['PA']));
+  expect(isSuperLinearlyIncreasing(sim.history['A'])).toBeTruthy();
+  expect(isStrictlyDecreasing(sim.history['PA'])).toBeTruthy();
 });
 
-test(`SPS causal graphs work as expected.`, t => {
+test(`SPS causal graphs work as expected.`, () => {
   const graph = new CausalGraph(`
 Parental expectations (PE) o-> Satisfaction Gap (SG)
 Academic <br/>Performance (AR) -> SG
@@ -602,7 +602,7 @@ SE -> PF
   //     expectations are not met, parents withdraw children from school, which
   //     reduces the amount of funding the school gets.
   const loops = graph.analyzeLoops();
-  t.is(loops.length, 3);
+  expect(loops).toHaveLength(3);
 
   // Hypothesis: if the school board has too strict a limit on contribution
   // limits for parents, academic outcomes will suffer, parents will withdraw
@@ -646,25 +646,22 @@ SE -> PF
   // - Parent funding is high.
 });
 
-test(`Downsampling works as expected.`, t => {
+test(`Downsampling works as expected.`, () => {
   const result = downsample([1, 2, 3, 4, 5, 6, 7, 8, 9], 3);
-  t.is(result.length, 3);
-  t.deepEqual(result, [2, 5, 8]);
+  expect(result).toEqual([2, 5, 8]);
 
   const r2 = downsample([1, 2, 3, 4, 5, 6, 7], 2);
-  t.is(r2.length, 2);
-  t.deepEqual(r2, [2, 5.5]);
+  expect(r2).toEqual([2, 5.5]);
 
 
   const r3 = downsample([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], 4);
-  t.is(r3.length, 4);
-  t.deepEqual(r3, [1, 4.5, 8, 11.5]);
+  expect(r3).toEqual([1, 4.5, 8, 11.5]);
 });
 
-test(`meanBetween works as expected`, t => {
+test(`meanBetween works as expected`, () => {
   const arr = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-  t.is(meanBetween(arr, 0, 2), 2);
-  t.is(meanBetween(arr, 3, 5), 5);
-  t.is(meanBetween(arr, 6, 8), 8);
-  t.is(meanBetween(arr, 1, 4), 3.5);
+  expect(meanBetween(arr, 0, 2)).toBe(2);
+  expect(meanBetween(arr, 3, 5)).toBe(5);
+  expect(meanBetween(arr, 6, 8)).toBe(8);
+  expect(meanBetween(arr, 1, 4)).toBe(3.5);
 });
