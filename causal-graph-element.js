@@ -8,7 +8,16 @@ export class CausalGraphElement extends LitElement {
     return css`
       p { color: blue; }
       .mermaid { width: 100%; }
-      .mermaid svg { max-width: none !important; }
+      .mermaid svg {
+        max-width: none !important;
+        max-height: 100vh;
+      }
+      .wrap {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        height: 100%;
+      }
   `;
   }
 
@@ -81,7 +90,7 @@ export class CausalGraphElement extends LitElement {
       html`<textarea cols=80 rows=10 placeholder="Your CGML graph goes in here." @input=${this.handleTextareaInput}
   @blur=${this.handleTextareaBlur}>${this.cgml}</textarea>` : html``;
     return html`
-    <div style="display: flex; flex-direction: row">
+    <div class="wrap">
       ${textarea}
       <div class="mermaid">Mermaid diagram comes out here</div>
     </div>
