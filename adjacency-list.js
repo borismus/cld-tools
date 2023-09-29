@@ -171,13 +171,16 @@ export class Node {
 export class Edge {
   // The name of the target node.
   targetName = '';
-  // The valence of the label.
+  // The valence of the edge.
   isOpposite = false;
+  // The label on the edge.
+  label = '';
 
   clone() {
     const copy = new Edge();
     copy.targetName = this.targetName;
     copy.isOpposite = this.isOpposite;
+    copy.label = this.label;
     return copy;
   }
 }

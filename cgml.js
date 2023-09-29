@@ -1,4 +1,4 @@
-import { AdjacencyList, Edge, Node } from "./adjacency-list.js";
+import {AdjacencyList, Edge, Node} from "./adjacency-list.js";
 
 /**
  * CGML format is a collection of lines that look like this:
@@ -9,6 +9,10 @@ import { AdjacencyList, Edge, Node } from "./adjacency-list.js";
  * CGML also supports negative edges like this:
  *
  *   S o-> T
+ *
+ * CGML format also supports edge labels in the following format:
+ *
+ *   S --> T // A pretty long edge label that may get turned into multiline.
  *
  * @param {string} cgml
  * @returns {AdjacencyList}
@@ -38,13 +42,19 @@ export function parseCGMLLine(line) {
   if (line.trim() === '') {
     return new AdjacencyList();
   }
+  // Try to extract the edge label out of the line. It is denoted by a trailing
+  // comment.
+  let [nodeText, edgeLabel] = line.split('//');
+  if (edgeLabel) {
+    edgeLabel = edgeLabel.trim();
+  }
   // First, split along the arrow. If there's no arrow, we're in bad shape.
-  const split = line.split('->');
+  const split = nodeText.split('->');
   if (split.length !== 2) {
     throw new Error('Each line must contain exactly one arrow.');
   }
   let [left, right] = split;
-  // Account for weird arrows.
+  // Account for negative arrows.
   let isOpposite = false;
   if (left.endsWith('o')) {
     isOpposite = true;
@@ -59,6 +69,9 @@ export function parseCGMLLine(line) {
   const edge = new Edge();
   edge.targetName = target.name;
   edge.isOpposite = isOpposite;
+  if (edgeLabel) {
+    edge.label = edgeLabel;
+  }
   source.adjacentEdges.push(edge);
 
   const graph = new AdjacencyList();

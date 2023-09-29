@@ -8,7 +8,7 @@ import {arrayMean, distinfo, isStrictlyDecreasing, isSuperLinearlyIncreasing, sp
 test('Parse single CGML line', () => {
   const result = parseCGMLLine('Parent Funding (PF) -> Educational Outcomes (EO)');
   expect(result.nodes.length).toBe(2);
-  expect(result.findNodeByName('PF')).toBeDefined();
+  expect(result.findNodeByName('PF')).not.toBeNull();
   expect(result.findNodeByName('Fake')).toBeNull();
   expect(result.findNodeByName('EO').label).toBe('Educational Outcomes');
   expect(result.findNodeByName('PF').label).toBe('Parent Funding');
@@ -26,7 +26,14 @@ test('Allow CGML lines with comments starting with //', () => {
   expect(result.nodes.length).toBe(0);
   const leadingResult = parseCGMLLine('   // Even comments with leading whitespace.');
   expect(leadingResult.nodes.length).toBe(0);
-})
+});
+
+
+test(`Parse CGML line with edge labels`, () => {
+  const result = parseCGMLLine('A -> B // Label.');
+  const edge = result.findNodeByName('A').adjacentEdges[0];
+  expect(edge.label).toBe('Label.');
+});
 
 test('Parse two-line CGML', () => {
   const result = parseCGML(`
@@ -34,7 +41,7 @@ test('Parse two-line CGML', () => {
   EO -> Dog
   `);
   expect(result.nodes.length).toBe(3);
-  expect(result.findNodeByName('Dog')).toBeDefined();
+  expect(result.findNodeByName('Dog')).not.toBeNull();
   expect(result.findNodeByName('Dog').name).toBe('Dog');
 });
 
@@ -201,8 +208,8 @@ test(`Convert to mermaid.js graph`, () => {
   const mermaid = graph.toMermaid();
 
   expect(mermaid.startsWith('graph TD')).toBeTruthy();
-  expect(mermaid.match(/^.*Academic Results.*-->.*Satisfaction Gap.*$/gm)).toBeDefined();
-  expect(mermaid.match(/^.*School Enrollment.*-.->.*Parent Funding.*$/gm)).toBeDefined();
+  expect(mermaid.match(/^.*Academic Results.*-->.*Satisfaction Gap.*$/gm)).not.toBeNull();
+  expect(mermaid.match(/^.*School Enrollment.*-.->.*Parent Funding.*$/gm)).not.toBeNull();
 });
 
 test(`Graph concatenation`, () => {
@@ -359,9 +366,30 @@ test(`Cycles are rendered in mermaid diagrams`, () => {
   graph1.concat(graph2);
 
   const mermaid = graph1.toMermaid({labelLoops: true});
-  expect(mermaid.match(/^.*Academic Results.*-.->.*|B2|.*School Inequality.*$/gm)).toBeDefined();
-  expect(mermaid.match(/^.*School Inequality.*-.->.*|B2|.*Parent Funding.*$/gm)).toBeDefined();
+  expect(mermaid.match(/^.*Academic Results.*-.->.*|B2|.*School Inequality.*$/gm)).not.toBeNull();
+  expect(mermaid.match(/^.*School Inequality.*-.->.*|B2|.*Parent Funding.*$/gm)).not.toBeNull();
+});
 
+test(`Edge labels play well with cycles`, () => {
+  const graph1 = new CausalGraph(`
+  A -> B // More A causes more B
+  B -> C // World
+  C -> A
+  `);
+  const mermaid = graph1.toMermaid({labelLoops: true});
+  console.log(mermaid);
+  expect(mermaid.match(/^.*World.*R1.*$/gm)).not.toBeNull();
+  expect(mermaid.match(/^.*More A causes more B.*R1.*$/gm)).not.toBeNull();
+});
+
+test(`Edge labels are rendered in mermaid diagrams`, () => {
+  const graph1 = new CausalGraph(`
+  A -> B // Hello
+  B -> C // World
+  `);
+  const mermaid = graph1.toMermaid();
+  expect(mermaid.match(/^.*Hello.*$/gm)).not.toBeNull();
+  expect(mermaid.match(/^.*World.*$/gm)).not.toBeNull();
 });
 
 test(`Reinforcing and balancing loops are labeled in complex mermaid diagrams`, () => {
@@ -381,8 +409,8 @@ test(`Reinforcing and balancing loops are labeled in complex mermaid diagrams`, 
   g1.concat(g2);
   const mermaid = g1.toMermaid({labelLoops: true});
 
-  expect(mermaid.match(/^.*F.*-->.*|R5|.*B.*$/gm)).toBeDefined();
-  expect(mermaid.match(/^.*C.*-->.*|R5|.*F.*$/gm)).toBeDefined();
+  expect(mermaid.match(/^.*F.*-->.*|R5|.*B.*$/gm)).not.toBeNull();
+  expect(mermaid.match(/^.*C.*-->.*|R5|.*F.*$/gm)).not.toBeNull();
 });
 
 test(`Simple graph simulation initializes to correct init values.`, () => {

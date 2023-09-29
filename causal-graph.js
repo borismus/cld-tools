@@ -108,7 +108,15 @@ export class CausalGraph {
     for (const fromNode of nodes) {
       for (const edge of fromNode.adjacentEdges) {
         const toNode = this.adjList.findNodeByName(edge.targetName);
-        const label = this.getLoopLabel(fromNode, toNode, loops);
+        const feedbackLabel = this.getFeedbackLoopLabel(fromNode, toNode, loops);
+        let label = `${edge.label}`;
+        if (feedbackLabel) {
+          label += ` <b>${feedbackLabel}</b>`;
+        }
+        label = label.trim();
+        if (label) {
+          label = `|${label}|`;
+        }
         const arrow = edge.isOpposite ? `-.->` : `-->`;
         const line = `${nodeToMermaid(fromNode)} ${arrow}${label} ${nodeToMermaid(toNode)}\n`;
         out += line;
@@ -120,7 +128,7 @@ export class CausalGraph {
     return out;
   }
 
-  getLoopLabel(fromNode, toNode, loops) {
+  getFeedbackLoopLabel(fromNode, toNode, loops) {
     const loopLabels = [];
     for (const [ind, loop] of loops.entries()) {
       if (loop.isDirectlyConnected(fromNode, toNode)) {
@@ -130,7 +138,7 @@ export class CausalGraph {
     }
     let label = '';
     if (loopLabels.length > 0) {
-      label = `|${loopLabels.join(', ')}|`;
+      label = `${loopLabels.join(', ')}`;
     }
     return label;
   }
