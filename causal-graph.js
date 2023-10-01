@@ -109,7 +109,7 @@ export class CausalGraph {
       for (const edge of fromNode.adjacentEdges) {
         const toNode = this.adjList.findNodeByName(edge.targetName);
         const feedbackLabel = this.getFeedbackLoopLabel(fromNode, toNode, loops);
-        let label = `${edge.label}`;
+        let label = edge.label;
         if (feedbackLabel) {
           label += ` <b>${feedbackLabel}</b>`;
         }

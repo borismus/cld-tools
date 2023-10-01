@@ -72,7 +72,6 @@ export class CausalGraphElement extends LitElement {
         return;
       }
       const graph = new CausalGraph(cgml);
-      graph.mermaidOrientation = 'LR';
 
       const mermaidMarkup = graph.toMermaid({labelLoops: true});
       // console.log('Rendering mermaid.js', mermaidMarkup)
