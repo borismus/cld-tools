@@ -57,7 +57,10 @@ export class CausalGraph {
   /**
    * @returns {string} This graph represented in mermaid.js.
    */
-  toMermaid({labelLoops = false} = {}) {
+  toMermaid({
+    labelLoops = false, // Show balancing and reinforcing loops.
+    labelDirections = true // Show directions with + and - labels.
+  } = {}) {
     let out = `graph ${this.mermaidOrientation}\n`;
 
     // Calculate loops and mark each loop with R or B depending on loop type,
@@ -89,7 +92,7 @@ export class CausalGraph {
       }
     }
 
-    out += this.nodeListToMermaidEdges(this.adjList.nodes, loops);
+    out += this.nodeListToMermaidEdges(this.adjList.nodes, loops, {labelDirections});
 
     return out.trim();
   }
@@ -102,7 +105,7 @@ export class CausalGraph {
     this.adjList.concat(graph.adjList);
   }
 
-  nodeListToMermaidEdges(nodes, loops) {
+  nodeListToMermaidEdges(nodes, loops, {labelDirections = true} ={}) {
     let out = '';
     // Go through adjacency list and spit out mermaid.js graph, edge by edge.
     for (const fromNode of nodes) {
@@ -114,6 +117,10 @@ export class CausalGraph {
           label += ` <b>${feedbackLabel}</b>`;
         }
         label = label.trim();
+        if (labelDirections) {
+          const direction = edge.isOpposite ? '-' : '+';
+          label = `<b>${direction}</b> ` + label;
+        }
         if (label) {
           label = `|${label}|`;
         }
